@@ -1,3 +1,10 @@
+/* This code is heavily inspired by the 3D engine of 'OneLoneCoder' in C++
+you can find the source code in:
+https://github.com/OneLoneCoder/Javidx9/tree/master/ConsoleGameEngine/BiggerProjects/Engine3D .
+featured in this video of his:
+https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
+
+
 /* Does not work*/
 
 
