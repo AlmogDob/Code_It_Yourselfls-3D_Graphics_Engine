@@ -65,9 +65,14 @@ float delta_time;
 float fps = 0;
 mesh cube_mesh; 
 Mat proj_mat, rotZ_mat, rotX_mat;
+Uint32 previous_frame_time = 0;
 
 int current_num_of_triangles = 0;
 float theta = 0;
+
+int space_bar_was_pressed = 0;
+int to_render = 1;
+int to_update = 1;
 
 
 int main()
@@ -79,8 +84,13 @@ int main()
 
     while (game_is_running) {
         process_input();
-        update();
-        render();        
+        if (to_update) {
+            update();
+        }
+        if (to_render) {
+            render();
+        }
+        
     }
 
     destroy_window();
@@ -233,6 +243,21 @@ void process_input(void)
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
                     game_is_running = 0;
                 }
+                if (event.key.keysym.sym == SDLK_SPACE) {
+                    if (!space_bar_was_pressed) {
+                        to_render = 0;
+                        to_update = 0;
+                        space_bar_was_pressed = 1;
+                        break;
+                    }
+                    if (space_bar_was_pressed) {
+                        to_render = 1;
+                        to_update = 1;
+                        previous_frame_time = SDL_GetTicks();
+                        space_bar_was_pressed = 0;
+                        break;
+                    }
+                }
                 break;
         }
     }
@@ -331,7 +356,6 @@ void destroy_window(void)
 
 void fix_framerate(void)
 {
-    static Uint32 previous_frame_time = 0;
     int time_ellapsed = SDL_GetTicks() - previous_frame_time;
     int time_to_wait = FRAME_TARGET_TIME - time_ellapsed;
     
