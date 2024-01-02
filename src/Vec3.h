@@ -18,7 +18,7 @@ Vec3 Vec3_sub(Vec3 *a,Vec3 *b);
 Vec3 Vec3_mul(Vec3 *v, float factor);
 Vec3 Vec3_div(Vec3 *v, float factor);
 float Vec3_length(Vec3 *v);
-float Vec3_dot(Vec3 *a, Vec3 *b);
+float Vec3_dot(Vec3 a, Vec3 b);
 Vec3 Vec3_cross(Vec3 *a, Vec3 *b);
 void Vec3_normalize(Vec3 *v);
 Vec3 Vec3_rotate_around_x(Vec3 v, Vec3 center, float angle);
@@ -83,9 +83,9 @@ float Vec3_length(Vec3 *v)
     return sqrtf((v->x * v->x) + (v->y * v->y) + (v->z * v->z));
 }
 
-float Vec3_dot(Vec3 *a, Vec3 *b)
+float Vec3_dot(Vec3 a, Vec3 b)
 {
-    return ((a->x * b->x) + (a->y * b->y) + (a->z * b->z));
+    return ((a.x * b.x) + (a.y * b.y) + (a.z * b.z));
 }
 
 Vec3 Vec3_cross(Vec3 *a, Vec3 *b)

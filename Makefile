@@ -11,3 +11,8 @@ test:
 	gcc -Wall -Wextra ./test.c -lSDL2 -lSDL2_ttf -lm -o test
 	./test
 	rm test
+
+load: ./src/load_from_object_file.c
+	gcc -Wall -Wextra ./src/load_from_object_file.c -lSDL2 -lSDL2_ttf -lm -o load
+	./load
+	rm load

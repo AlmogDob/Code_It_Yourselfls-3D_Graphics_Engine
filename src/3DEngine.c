@@ -5,19 +5,24 @@ featured in this video of his:
 https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 
-/* Does not work*/
+/* Does not work */
 
 
 
 #include <time.h>
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include "load_from_object_file.h"
 
 #define MATRIX_IMPLEMENTATION
 #include "Matrix.h"
 
 #define VEC3_IMPLEMENTATION
 #include "Vec3.h"
+
+#define VEC2_IMPLEMENTATION
+#include "Vec2.h"
 
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 1000
@@ -32,7 +37,9 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 #define PI 3.14159265359
 
-#define NUM_OF_TRIANGLES 100
+#define NUM_OF_TRIANGLES 1000
+#define NUM_OF_VERTS 3*NUM_OF_TRIANGLES
+
 
 typedef struct {
     Vec3 p[3];
@@ -52,6 +59,9 @@ void fix_framerate(void);
 void print_triangle(triangle t, int padding, char *name);
 void mat4x4_dot_vec3(Vec3 *out, Vec3 *in, Mat m);
 void SDL_DrawTriangle(SDL_Renderer *current_renderer, triangle t, SDL_Color color);
+float edge_cross(Vec2 *a, Vec2 *b, Vec2 *p);
+bool is_top_left(Vec2 *start, Vec2 *end);
+void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color);
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -60,11 +70,14 @@ SDL_Surface *text_surface = NULL;
 SDL_Texture *text_texture = NULL;
 SDL_Rect fps_place;
 SDL_Color white_color;
+SDL_Color black_color;
+SDL_Color tri_color;
 int game_is_running = 0;
 float delta_time;
 float fps = 0;
 mesh cube_mesh; 
 Mat proj_mat, rotZ_mat, rotX_mat;
+Vec3 camera;
 Uint32 previous_frame_time = 0;
 
 int current_num_of_triangles = 0;
@@ -142,6 +155,13 @@ void setup(void)
     white_color.b = 255;
     white_color.g = 255;
     white_color.r = 255;
+
+    black_color.a = 255;
+    black_color.b = 0;
+    black_color.g = 0;
+    black_color.r = 0;
+
+    tri_color = white_color;
 
     fps_place.x = 10;
     fps_place.y = 10;
@@ -300,11 +320,13 @@ void update(void)
 
 void render(void)
 {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
     SDL_RenderClear(renderer);
 
     /* Draw Triangles */
     triangle projected_tri, translated_tri, rotatedZ_tri, rotatedZX_tri, tri;
+    Vec3 normal, line1, line2, light_position;
+    float dp;
 
     for (int i = 0; i < current_num_of_triangles; i++) {
         
@@ -323,21 +345,47 @@ void render(void)
         translated_tri.p[1].z = rotatedZX_tri.p[1].z + 3.0f;
         translated_tri.p[2].z = rotatedZX_tri.p[2].z + 3.0f;
 
-        mat4x4_dot_vec3(&projected_tri.p[0], &translated_tri.p[0], proj_mat);
-        mat4x4_dot_vec3(&projected_tri.p[1], &translated_tri.p[1], proj_mat);
-        mat4x4_dot_vec3(&projected_tri.p[2], &translated_tri.p[2], proj_mat);
+        line1.x = translated_tri.p[1].x - translated_tri.p[0].x;
+        line1.y = translated_tri.p[1].y - translated_tri.p[0].y;
+        line1.z = translated_tri.p[1].z - translated_tri.p[0].z;
 
-        /* Scale into view */
-        projected_tri.p[0].x += 1.0f; projected_tri.p[0].y += 1.0f;
-        projected_tri.p[1].x += 1.0f; projected_tri.p[1].y += 1.0f;
-        projected_tri.p[2].x += 1.0f; projected_tri.p[2].y += 1.0f;
+        line2.x = translated_tri.p[2].x - translated_tri.p[0].x;
+        line2.y = translated_tri.p[2].y - translated_tri.p[0].y;
+        line2.z = translated_tri.p[2].z - translated_tri.p[0].z;
 
-        for (int j = 0; j < 3; j++) {
-            projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
-            projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
+        normal = Vec3_cross(&line1, &line2);
+        Vec3_normalize(&normal);
+
+        if (Vec3_dot(normal, Vec3_sub(&translated_tri.p[0], &camera)) < 0.0f) {
+            
+            /* Illumination */
+            tri_color = white_color;
+            light_position = Vec3_new(0.0f, 0.0f, -1.0f);
+            Vec3_normalize(&light_position);
+            
+            dp = Vec3_dot(normal, light_position);
+            tri_color.r *= dp;
+            tri_color.g *= dp;
+            tri_color.b *= dp;
+            
+            mat4x4_dot_vec3(&projected_tri.p[0], &translated_tri.p[0], proj_mat);
+            mat4x4_dot_vec3(&projected_tri.p[1], &translated_tri.p[1], proj_mat);
+            mat4x4_dot_vec3(&projected_tri.p[2], &translated_tri.p[2], proj_mat);
+
+            /* Scale into view */
+            projected_tri.p[0].x += 1.0f; projected_tri.p[0].y += 1.0f;
+            projected_tri.p[1].x += 1.0f; projected_tri.p[1].y += 1.0f;
+            projected_tri.p[2].x += 1.0f; projected_tri.p[2].y += 1.0f;
+
+            for (int j = 0; j < 3; j++) {
+                projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
+                projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
+            }
+            
+            triangle_fill(renderer, projected_tri, tri_color);
+            // SDL_DrawTriangle(renderer, projected_tri, black_color);
+
         }
-        
-        SDL_DrawTriangle(renderer, projected_tri, white_color);
     } 
 
     
@@ -360,7 +408,7 @@ void fix_framerate(void)
     int time_to_wait = FRAME_TARGET_TIME - time_ellapsed;
     
     if (time_to_wait > 0 && time_to_wait < FRAME_TARGET_TIME) {
-        SDL_Delay(time_to_wait);
+        // SDL_Delay(time_to_wait);
     }
     delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0f;
     previous_frame_time = SDL_GetTicks();
@@ -397,3 +445,87 @@ void SDL_DrawTriangle(SDL_Renderer *current_renderer, triangle t, SDL_Color colo
     SDL_RenderDrawLineF(renderer, t.p[2].x, t.p[2].y, t.p[0].x, t.p[0].y);
 }
 
+float edge_cross(Vec2 *a, Vec2 *b, Vec2 *p)
+{
+    Vec2 ab = {b->x - a->x, b->y - a->y};
+    Vec2 ap = {p->x - a->x, p->y - a->y};
+    return (int)Vec2_cross(&ab, &ap);
+}
+
+bool is_top_left(Vec2 *start, Vec2 *end)
+{
+    Vec2 edge = {end->x - start->x, end->y - start->y};
+
+    bool is_top_edge = edge.y == 0 && edge.x > 0;
+    bool is_left_edge = edge.y < 0;
+
+    return is_top_edge || is_left_edge;
+}
+
+void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color)
+{
+    Vec2 v0, v1, v2;
+
+    v0.x = t.p[0].x;
+    v0.y = t.p[0].y;
+
+    v1.x = t.p[2].x;
+    v1.y = t.p[2].y;
+
+    v2.x = t.p[1].x;
+    v2.y = t.p[1].y;
+    
+    // find the bounding box with all candidate pixels
+    int x_min = floor(MIN(MIN(v0.x, v1.x), v2.x));
+    int y_min = floor(MIN(MIN(v0.y, v1.y), v2.y));
+    int x_max = ceil(MAX(MAX(v0.x, v1.x), v2.x));
+    int y_max = ceil(MAX(MAX(v0.y, v1.y), v2.y));
+
+    float delta_w0_col = (v1.y - v2.y);
+    float delta_w1_col = (v2.y - v0.y);
+    float delta_w2_col = (v0.y - v1.y);
+    
+    float delta_w0_row = (v2.x - v1.x);
+    float delta_w1_row = (v0.x - v2.x);
+    float delta_w2_row = (v1.x - v0.x);
+
+    // float area = edge_cross(&v0, &v1, &v2);
+
+    float bias0 = is_top_left(&v1, &v2) ? 0 : -1e-10;
+    float bias1 = is_top_left(&v2, &v0) ? 0 : -1e-10;
+    float bias2 = is_top_left(&v0, &v1) ? 0 : -1e-10;
+
+    Vec2 p0 = {x_min + 0.5f, y_min + 0.5f};
+    float w0_row = edge_cross(&v1, &v2, &p0) + bias0;
+    float w1_row = edge_cross(&v2, &v0, &p0) + bias1;
+    float w2_row = edge_cross(&v0, &v1, &p0) + bias2;
+
+    // loop all candidate pixels inside the bounding box
+    for (int y = y_min; y <= y_max; y++) {
+
+        float w0 = w0_row;
+        float w1 = w1_row;
+        float w2 = w2_row;
+
+        for ( int x = x_min; x <= x_max; x++) {
+            
+            bool is_inside = (w0 >= 0 && w1 >= 0 && w2 >= 0);
+            
+            if (is_inside) {
+                // float alpha = (float)w0 / area;
+                // float beta = (float)w1 / area;
+                // float gamma = (float)w2 / area;
+
+                // draw_pixel(x, y, color);
+                SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+                SDL_RenderDrawPoint(renderer, x, y);
+            }
+            w0 += delta_w0_col;
+            w1 += delta_w1_col;
+            w2 += delta_w2_col;
+        }
+        w0_row += delta_w0_row;
+        w1_row += delta_w1_row;
+        w2_row += delta_w2_row;
+    }
+}
