@@ -42,6 +42,8 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 typedef struct {
     Vec3 p[3];
+    float mid_z;
+    SDL_Color my_color;
 } triangle;
 
 typedef struct {
@@ -65,6 +67,8 @@ void SDL_DrawTriangle(SDL_Renderer *current_renderer, triangle t, SDL_Color colo
 float edge_cross(Vec2 *a, Vec2 *b, Vec2 *p);
 bool is_top_left(Vec2 *start, Vec2 *end);
 void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color);
+void qsort_tri(triangle v[], int left, int right);
+void swap(triangle v[], int i, int j);
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -80,12 +84,14 @@ float delta_time;
 float fps = 0;
 mesh cube_mesh; 
 mesh simple_shape_mesh;
+triangle triangles_to_render[MAX_NUM_OF_TRIANGLES];
 Mat proj_mat, rotZ_mat, rotX_mat;
 Vec3 camera;
 Uint32 previous_frame_time = 0;
 
 int current_MAX_num_of_triangles = 0;
 float theta = 0;
+int number_of_triangles_to_render = 0;
 
 int space_bar_was_pressed = 0;
 int to_render = 1;
@@ -328,18 +334,11 @@ void update(void)
     MAT_AT(rotX_mat, 2, 2) = cosf(theta*0.5);
     MAT_AT(rotX_mat, 3, 3) = 1.0f;
 
-}
-
-void render(void)
-{
-    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
-    SDL_RenderClear(renderer);
-
-    /* Draw Triangles */
+        /* Draw Triangles */
     triangle projected_tri, translated_tri, rotatedZ_tri, rotatedZX_tri, tri;
     Vec3 normal, line1, line2, light_position;
     float dp;
-
+    number_of_triangles_to_render = 0;
     for (int i = 0; i < simple_shape_mesh.num_of_triangles; i++) {
         
         tri = simple_shape_mesh.tris[i];
@@ -373,7 +372,7 @@ void render(void)
             
             /* Illumination */
             tri_color = white_color;
-            light_position = Vec3_new(0.0f, 0.0f, -1.0f);
+            light_position = Vec3_new(0.0f, -1.0f, 0.0f);
             Vec3_normalize(&light_position);
             
             dp = Vec3_dot(normal, light_position);
@@ -396,13 +395,30 @@ void render(void)
                 projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
                 projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
             }
-            
+            projected_tri.mid_z = (projected_tri.p[0].z + projected_tri.p[1].z + projected_tri.p[2].z) / 3.0f;
+            projected_tri.my_color = tri_color;
+            triangles_to_render[number_of_triangles_to_render] = projected_tri;
+            number_of_triangles_to_render++;
             // triangle_fill(renderer, projected_tri, tri_color);
-            SDL_DrawTriangle(renderer, projected_tri, white_color);
+            // SDL_DrawTriangle(renderer, projected_tri, white_color);
 
         }
     } 
 
+}
+
+void render(void)
+{
+    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
+    SDL_RenderClear(renderer);
+/* -------------------------------------------------------------------------------------------------- */
+    qsort_tri(triangles_to_render, 0, number_of_triangles_to_render);
+    // dprintINT(number_of_triangles_to_render);
+    for (int i = 0; i < number_of_triangles_to_render; i++) {
+        triangle_fill(renderer, triangles_to_render[i], white_color);
+        SDL_DrawTriangle(renderer, triangles_to_render[i], black_color);
+
+    }
     
 /* -------------------------------------------------------------------------------------------------- */
     SDL_RenderCopy(renderer, text_texture, NULL, &fps_place);
@@ -543,4 +559,31 @@ void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color)
         w1_row += delta_w1_row;
         w2_row += delta_w2_row;
     }
+}
+
+/* qsort_tri: sort v[left]...v[right] int increasing order */
+void qsort_tri(triangle v[], int left, int right)
+{
+    int i, last;
+
+    if (left >= right)                  /* do nothing if array contains */
+        return;                         /* fewer than two elements */
+    swap(v, left, (left + right) / 2);  /* move partition elem */
+    last = left;                        /* to v[0] */
+    for (i = left + 1; i <= right; i++) /* partition */
+        if (v[i].mid_z > v[left].mid_z)
+            swap(v, ++last, i);
+    swap(v, left, last); /* restore partition elem */
+    qsort_tri(v, left, last - 1);
+    qsort_tri(v, last + 1, right);
+}
+
+/* swap: interchange v[i] and v[j] */
+void swap(triangle v[], int i, int j)
+{
+    triangle temp;
+
+    temp = v[i];
+    v[i] = v[j];
+    v[j] = temp;
 }

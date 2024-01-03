@@ -12,6 +12,7 @@
 #ifndef MESH_TYPE
 
 #include "Vec3.h"
+#include <SDL2/SDL.h>
 
 #define MAX_NUM_OF_TRIANGLES 10000
 #define MAX_NUM_OF_VERTS 3*MAX_NUM_OF_TRIANGLES
@@ -19,6 +20,8 @@
 
 typedef struct {
     Vec3 p[3];
+    float mid_z;
+    SDL_Color my_color;
 } triangle;
 
 typedef struct {
