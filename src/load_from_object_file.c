@@ -1,30 +1,28 @@
+
+
 #include "load_from_object_file.h"
 
-#if 1
-#define VEC3_IMPLEMENTATION
-#include "Vec3.h"
+#if 0
 
-#define NUM_OF_TRIANGLES 10000
-#define NUM_OF_VERTS 3*NUM_OF_TRIANGLES
 #define dprintS(expr) printf(#expr " = %s\n", expr)
 #define dprintI(expr) printf(#expr " = %d\n", expr)
 #define dprintC(expr) printf(#expr " = %c\n", expr)
 #define dprintF(expr) printf(#expr " = %g\n", expr)
 
-
-typedef struct {
-    Vec3 p[3];
-} triangle;
-
-typedef struct {
-    triangle tris[NUM_OF_TRIANGLES];
-} mesh;
-
 int main()
 {
-    load_from_object_file("./simple_shape/simple_shape.obj");
+    mesh this_mesh;
+    int number_of_triangle = load_from_object_file(&this_mesh, "./simple_shape/simple_shape.obj");
     
-    
+    VEC3_PRINT(this_mesh.tris[0].p[0]);
+    VEC3_PRINT(this_mesh.tris[0].p[1]);
+    VEC3_PRINT(this_mesh.tris[0].p[2]);
+
+    dprintI(number_of_triangle);
+
+    VEC3_PRINT(this_mesh.tris[number_of_triangle-1].p[0]);
+    VEC3_PRINT(this_mesh.tris[number_of_triangle-1].p[1]);
+    VEC3_PRINT(this_mesh.tris[number_of_triangle-1].p[2]);
     // char s[20];
     // my_getline(s, 20, stdin);
     // printf("%s",s);
@@ -46,14 +44,14 @@ int my_getline(char *line, int max, FILE *file)
     }
 }
 
-bool load_from_object_file(char *file_name)
+int load_from_object_file(mesh *this_mesh, char *file_name)
 {
     /*test*/
     // printf("load\n");
     /*test*/
     FILE *fp;
-    Vec3 verts[NUM_OF_VERTS];
-    int verts_counter = 0, i, j, length, test_counter = 0;
+    Vec3 verts[MAX_NUM_OF_VERTS];
+    int verts_counter = 0, triangles_counter = 0, i, j, length, test_counter = 0, number_int;
     char line[MAXLINE], c, word[MAXWORD];
     float number;
 
@@ -143,6 +141,78 @@ bool load_from_object_file(char *file_name)
         }
         
         if (line[0] == 'f' && line[1] == ' ') {
+            for (i = 2, j = 0; (c = line[i]) != '\n'; i++) {
+                /*test*/
+                // dprintC(c);
+                /*test*/
+                while (!isspace(c)) {
+                    word[j++] = line[i];
+                    /*test*/
+                    // dprintI(i);
+                    // dprintI(j);
+                    /*test*/
+
+                    c = line[++i];
+                }
+                word[j] = '\0';
+                // dprintS(word);
+                number_int = atoi(word);
+                this_mesh->tris[triangles_counter].p[0] = verts[number_int - 1];
+                // dprintF(number_int);
+
+                j = 0;
+                if (c == '\n') {
+                    printf("c is newline 1\n");
+                    break;
+                }
+                c = line[++i];
+
+                while (!isspace(c)) {
+                    word[j++] = line[i];
+                    /*test*/
+                    // dprintI(i);
+                    // dprintI(j);
+                    /*test*/
+                    i++;
+                    c = line[i];
+                }
+                word[j] = '\0';
+                number_int = atoi(word);
+                this_mesh->tris[triangles_counter].p[1] = verts[number_int - 1];
+                // dprintF(number_int);
+
+                j = 0;
+                if (c == '\n') {
+                    printf("c is newline 2\n");
+                    break;
+                }
+                c = line[++i];
+                
+                while (!isspace(c)) {
+                    word[j++] = line[i];
+                    /*test*/
+                    // dprintI(i);
+                    // dprintI(j);
+                    /*test*/
+                    i++;
+                    c = line[i];
+                }
+                word[j] = '\0';
+                number_int = atoi(word);
+                this_mesh->tris[triangles_counter].p[2] = verts[number_int - 1];
+                // dprintF(number_int);
+
+                j = 0;
+
+                // dprintI(triangles_counter);
+                triangles_counter++;
+
+                /*test*/               
+                // dprintI(i);
+                break;
+                // test_counter++;
+                /*test*/
+            }
             ;
         }
         /*test*/
@@ -154,5 +224,5 @@ bool load_from_object_file(char *file_name)
         /*test*/
     }
     fclose(fp);
-    return 0;
+    return triangles_counter;
 }

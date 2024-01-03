@@ -13,7 +13,6 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include "load_from_object_file.h"
 
 #define MATRIX_IMPLEMENTATION
 #include "Matrix.h"
@@ -37,8 +36,8 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 #define PI 3.14159265359
 
-#define NUM_OF_TRIANGLES 1000
-#define NUM_OF_VERTS 3*NUM_OF_TRIANGLES
+#define MAX_NUM_OF_TRIANGLES 1000
+#define MAX_NUM_OF_VERTS 3*MAX_NUM_OF_TRIANGLES
 
 
 typedef struct {
@@ -46,8 +45,12 @@ typedef struct {
 } triangle;
 
 typedef struct {
-    triangle tris[NUM_OF_TRIANGLES];
+    triangle tris[MAX_NUM_OF_TRIANGLES];
+    int num_of_triangles;
 } mesh;
+
+#define MESH_TYPE
+#include "load_from_object_file.h"
 
 int initialize_window(void);
 void setup(void);
@@ -76,12 +79,15 @@ int game_is_running = 0;
 float delta_time;
 float fps = 0;
 mesh cube_mesh; 
+mesh simple_shape_mesh;
+triangle triangle_to_render[MAX_NUM_OF_TRIANGLES];
 Mat proj_mat, rotZ_mat, rotX_mat;
 Vec3 camera;
 Uint32 previous_frame_time = 0;
 
-int current_num_of_triangles = 0;
+int current_MAX_num_of_triangles = 0;
 float theta = 0;
+int number_of_triangle_to_rendere = 0;
 
 int space_bar_was_pressed = 0;
 int to_render = 1;
@@ -145,6 +151,12 @@ int initialize_window(void)
         fprintf(stderr, "Error loading font.\n");
         return -1;
     }
+
+    simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./simple_shape/simple_shape.obj");
+    if (!simple_shape_mesh.num_of_triangles) {
+        fprintf(stderr, "Error loading 'simple shape'.\n");
+        return -1;
+    }
     
     return 0;
 }
@@ -168,6 +180,7 @@ void setup(void)
     fps_place.w = 110;
     fps_place.h = 25;
 
+/*-----------------------------------------------------*/
     /*SOUTH*/
     cube_mesh.tris[0].p[0] = Vec3_new(0,0,0);
     cube_mesh.tris[0].p[1] = Vec3_new(0,1,0);
@@ -222,9 +235,10 @@ void setup(void)
     cube_mesh.tris[11].p[1] = Vec3_new(0,0,0);
     cube_mesh.tris[11].p[2] = Vec3_new(1,0,0);
 
-    current_num_of_triangles = 12;
+    cube_mesh.num_of_triangles = 12;
+/*-----------------------------------------------------*/
 
-    // for (int i = 0; i < current_num_of_triangles; i++) {
+    // for (int i = 0; i < current_MAX_num_of_triangles; i++) {
     //     printf("%d .", i+1); PRINT_TRIANGLE(cube_mesh.tris[i], 4);
     // }
 
@@ -316,21 +330,15 @@ void update(void)
     MAT_AT(rotX_mat, 2, 2) = cosf(theta*0.5);
     MAT_AT(rotX_mat, 3, 3) = 1.0f;
 
-}
-
-void render(void)
-{
-    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
-    SDL_RenderClear(renderer);
-
-    /* Draw Triangles */
+        /* Draw Triangles */
     triangle projected_tri, translated_tri, rotatedZ_tri, rotatedZX_tri, tri;
     Vec3 normal, line1, line2, light_position;
     float dp;
 
-    for (int i = 0; i < current_num_of_triangles; i++) {
+    for (int i = 0; i < simple_shape_mesh.num_of_triangles; i++) {
         
-        tri = cube_mesh.tris[i];
+        tri = simple_shape_mesh.tris[i];
+        // tri = cube_mesh.tris[i];
         
         mat4x4_dot_vec3(&rotatedZ_tri.p[0], &tri.p[0], rotZ_mat);
         mat4x4_dot_vec3(&rotatedZ_tri.p[1], &tri.p[1], rotZ_mat);
@@ -341,9 +349,9 @@ void render(void)
         mat4x4_dot_vec3(&rotatedZX_tri.p[2], &rotatedZ_tri.p[2], rotX_mat);
         
         translated_tri = rotatedZX_tri;
-        translated_tri.p[0].z = rotatedZX_tri.p[0].z + 3.0f;
-        translated_tri.p[1].z = rotatedZX_tri.p[1].z + 3.0f;
-        translated_tri.p[2].z = rotatedZX_tri.p[2].z + 3.0f;
+        translated_tri.p[0].z = rotatedZX_tri.p[0].z + 300.0f;
+        translated_tri.p[1].z = rotatedZX_tri.p[1].z + 300.0f;
+        translated_tri.p[2].z = rotatedZX_tri.p[2].z + 300.0f;
 
         line1.x = translated_tri.p[1].x - translated_tri.p[0].x;
         line1.y = translated_tri.p[1].y - translated_tri.p[0].y;
@@ -382,11 +390,26 @@ void render(void)
                 projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
             }
             
-            triangle_fill(renderer, projected_tri, tri_color);
-            // SDL_DrawTriangle(renderer, projected_tri, black_color);
+            triangle_to_render[number_of_triangle_to_rendere] = projected_tri;
+            number_of_triangle_to_rendere++;
+            // SDL_DrawTriangle(renderer, projected_tri, white_color);
 
         }
     } 
+
+
+}
+
+void render(void)
+{
+    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
+    SDL_RenderClear(renderer);
+/* -------------------------------------------------------------------------------------------------- */
+
+    for (int i = 0; i < number_of_triangle_to_rendere; i++) {
+        triangle_fill(renderer, triangle_to_render[i], white_color);
+
+    }
 
     
 /* -------------------------------------------------------------------------------------------------- */
