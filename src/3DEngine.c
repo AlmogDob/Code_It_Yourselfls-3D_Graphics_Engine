@@ -80,14 +80,12 @@ float delta_time;
 float fps = 0;
 mesh cube_mesh; 
 mesh simple_shape_mesh;
-triangle triangle_to_render[MAX_NUM_OF_TRIANGLES];
 Mat proj_mat, rotZ_mat, rotX_mat;
 Vec3 camera;
 Uint32 previous_frame_time = 0;
 
 int current_MAX_num_of_triangles = 0;
 float theta = 0;
-int number_of_triangle_to_rendere = 0;
 
 int space_bar_was_pressed = 0;
 int to_render = 1;
@@ -330,7 +328,14 @@ void update(void)
     MAT_AT(rotX_mat, 2, 2) = cosf(theta*0.5);
     MAT_AT(rotX_mat, 3, 3) = 1.0f;
 
-        /* Draw Triangles */
+}
+
+void render(void)
+{
+    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
+    SDL_RenderClear(renderer);
+
+    /* Draw Triangles */
     triangle projected_tri, translated_tri, rotatedZ_tri, rotatedZX_tri, tri;
     Vec3 normal, line1, line2, light_position;
     float dp;
@@ -380,6 +385,8 @@ void update(void)
             mat4x4_dot_vec3(&projected_tri.p[1], &translated_tri.p[1], proj_mat);
             mat4x4_dot_vec3(&projected_tri.p[2], &translated_tri.p[2], proj_mat);
 
+
+
             /* Scale into view */
             projected_tri.p[0].x += 1.0f; projected_tri.p[0].y += 1.0f;
             projected_tri.p[1].x += 1.0f; projected_tri.p[1].y += 1.0f;
@@ -390,26 +397,11 @@ void update(void)
                 projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
             }
             
-            triangle_to_render[number_of_triangle_to_rendere] = projected_tri;
-            number_of_triangle_to_rendere++;
-            // SDL_DrawTriangle(renderer, projected_tri, white_color);
+            // triangle_fill(renderer, projected_tri, tri_color);
+            SDL_DrawTriangle(renderer, projected_tri, white_color);
 
         }
     } 
-
-
-}
-
-void render(void)
-{
-    SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
-    SDL_RenderClear(renderer);
-/* -------------------------------------------------------------------------------------------------- */
-
-    for (int i = 0; i < number_of_triangle_to_rendere; i++) {
-        triangle_fill(renderer, triangle_to_render[i], white_color);
-
-    }
 
     
 /* -------------------------------------------------------------------------------------------------- */
