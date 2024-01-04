@@ -5,7 +5,8 @@ featured in this video of his:
 https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 
-/* Does not work */
+/* There is something wrong with the lego man.
+I am not sure if it is a problam with the loading or a problam of the rendering  */
 
 
 
@@ -36,7 +37,7 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 #define PI 3.14159265359
 
-#define MAX_NUM_OF_TRIANGLES 1000
+#define MAX_NUM_OF_TRIANGLES 100000
 #define MAX_NUM_OF_VERTS 3*MAX_NUM_OF_TRIANGLES
 
 
@@ -69,6 +70,7 @@ bool is_top_left(Vec2 *start, Vec2 *end);
 void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color);
 void qsort_tri(triangle v[], int left, int right);
 void swap(triangle v[], int i, int j);
+void insertion_sort_tri(triangle A[], int size);
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -84,6 +86,10 @@ float delta_time;
 float fps = 0;
 mesh cube_mesh; 
 mesh simple_shape_mesh;
+mesh video_ship_mesh;
+mesh lego_man_mesh;
+mesh bolt_mesh;
+mesh teapot_mesh;
 triangle triangles_to_render[MAX_NUM_OF_TRIANGLES];
 Mat proj_mat, rotZ_mat, rotX_mat;
 Vec3 camera;
@@ -156,12 +162,36 @@ int initialize_window(void)
         return -1;
     }
 
-    simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./simple_shape/simple_shape.obj");
-    if (!simple_shape_mesh.num_of_triangles) {
-        fprintf(stderr, "Error loading 'simple shape'.\n");
+    // simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./simple_shape/simple_shape.obj");
+    // if (!simple_shape_mesh.num_of_triangles) {
+    //     fprintf(stderr, "Error loading 'simple shape'.\n");
+    //     return -1;
+    // }
+    
+    // video_ship_mesh.num_of_triangles = load_from_object_file(&video_ship_mesh, "./Video_Ship/Video_Ship.obj");
+    // if (!video_ship_mesh.num_of_triangles) {
+    //     fprintf(stderr, "Error loading 'video ship'.\n");
+    //     return -1;
+    // }
+
+    // lego_man_mesh.num_of_triangles = load_from_object_file(&lego_man_mesh, "./lego_man/LEGO_Man2.obj");
+    // if (!lego_man_mesh.num_of_triangles) {
+    //     fprintf(stderr, "Error loading 'lego man'.\n");
+    //     return -1;
+    // }
+
+    // bolt_mesh.num_of_triangles = load_from_object_file(&bolt_mesh, "./Bolt.obj");
+    // if (!bolt_mesh.num_of_triangles) {
+    //     fprintf(stderr, "Error loading 'bolt'.\n");
+    //     return -1;
+    // }
+
+    teapot_mesh.num_of_triangles = load_from_object_file(&teapot_mesh, "./teapot.obj");
+    if (!teapot_mesh.num_of_triangles) {
+        fprintf(stderr, "Error loading 'teapot'.\n");
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -339,9 +369,9 @@ void update(void)
     Vec3 normal, line1, line2, light_position;
     float dp;
     number_of_triangles_to_render = 0;
-    for (int i = 0; i < simple_shape_mesh.num_of_triangles; i++) {
+    for (int i = 0; i < teapot_mesh.num_of_triangles; i++) {
         
-        tri = simple_shape_mesh.tris[i];
+        tri = teapot_mesh.tris[i];
         // tri = cube_mesh.tris[i];
         
         mat4x4_dot_vec3(&rotatedZ_tri.p[0], &tri.p[0], rotZ_mat);
@@ -353,9 +383,9 @@ void update(void)
         mat4x4_dot_vec3(&rotatedZX_tri.p[2], &rotatedZ_tri.p[2], rotX_mat);
         
         translated_tri = rotatedZX_tri;
-        translated_tri.p[0].z = rotatedZX_tri.p[0].z + 300.0f;
-        translated_tri.p[1].z = rotatedZX_tri.p[1].z + 300.0f;
-        translated_tri.p[2].z = rotatedZX_tri.p[2].z + 300.0f;
+        translated_tri.p[0].z = rotatedZX_tri.p[0].z +5.0f;
+        translated_tri.p[1].z = rotatedZX_tri.p[1].z +5.0f;
+        translated_tri.p[2].z = rotatedZX_tri.p[2].z +5.0f;
 
         line1.x = translated_tri.p[1].x - translated_tri.p[0].x;
         line1.y = translated_tri.p[1].y - translated_tri.p[0].y;
@@ -372,7 +402,7 @@ void update(void)
             
             /* Illumination */
             tri_color = white_color;
-            light_position = Vec3_new(0.0f, -1.0f, 0.0f);
+            light_position = Vec3_new(0.0f, 0.0f, -1.0f);
             Vec3_normalize(&light_position);
             
             dp = Vec3_dot(normal, light_position);
@@ -412,11 +442,13 @@ void render(void)
     SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
     SDL_RenderClear(renderer);
 /* -------------------------------------------------------------------------------------------------- */
-    qsort_tri(triangles_to_render, 0, number_of_triangles_to_render);
+    // qsort_tri(triangles_to_render, 0, number_of_triangles_to_render);
+    insertion_sort_tri(triangles_to_render, number_of_triangles_to_render);
+    
     // dprintINT(number_of_triangles_to_render);
     for (int i = 0; i < number_of_triangles_to_render; i++) {
-        triangle_fill(renderer, triangles_to_render[i], white_color);
-        SDL_DrawTriangle(renderer, triangles_to_render[i], black_color);
+        triangle_fill(renderer, triangles_to_render[i], triangles_to_render[i].my_color);
+        // SDL_DrawTriangle(renderer, triangles_to_render[i], white_color);
 
     }
     
@@ -586,4 +618,20 @@ void swap(triangle v[], int i, int j)
     temp = v[i];
     v[i] = v[j];
     v[j] = temp;
+}
+
+void insertion_sort_tri(triangle A[], int size)
+{
+    triangle value;
+    int hole;
+
+    for (int i = 0; i < size; i++) {
+        value = A[i];
+        hole = i;
+        while (hole > 0 && A[hole-1].mid_z < value.mid_z) {
+            A[hole] = A[hole - 1];
+            hole--;
+        }
+        A[hole] = value;
+    }
 }

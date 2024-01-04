@@ -10,12 +10,20 @@
 #define MAXWORD 100
 
 #ifndef MESH_TYPE
+#define MESH_TYPE
 
+#ifndef VEC3_IMPLEMENTATION
+// #define VEC3_IMPLEMENTATION
+#endif //VEC3_IMPLEMENTATION
 #include "Vec3.h"
 #include <SDL2/SDL.h>
 
-#define MAX_NUM_OF_TRIANGLES 10000
+#define MAX_NUM_OF_TRIANGLES 15000
 #define MAX_NUM_OF_VERTS 3*MAX_NUM_OF_TRIANGLES
+#define dprintS(expr) printf(#expr " = %s\n", expr)
+#define dprintI(expr) printf(#expr " = %d\n", expr)
+#define dprintC(expr) printf(#expr " = %c\n", expr)
+#define dprintF(expr) printf(#expr " = %g\n", expr)
 
 
 typedef struct {

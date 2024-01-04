@@ -10,6 +10,7 @@ typedef struct {
     float x;
     float y;
     float z;
+    float w;
 } Vec3;
 
 Vec3 Vec3_new(float x, float y, float z);
