@@ -35,7 +35,10 @@ void Vec3_print(Vec3 v, char *name);
 
 Vec3 Vec3_new(float x, float y, float z)
 {
-    Vec3 result = {x, y, z};
+    Vec3 result;
+    result.x = x;
+    result.y = y;
+    result.z = z;
     return result;
 }
 
@@ -71,6 +74,9 @@ Vec3 Vec3_mul(Vec3 *v, float factor)
 
 Vec3 Vec3_div(Vec3 *v, float factor)
 {
+    if (!factor) {
+        factor = 1.0f;
+    }
     Vec3 result = {
         .x = v->x / factor,
         .y = v->y / factor,

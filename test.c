@@ -1,5 +1,8 @@
 #define VEC3_IMPLEMENTATION
-#include "Vec3.h"
+#include "./src/Vec3.h"
+
+#define MATRIX_IMPLEMENTATION
+#include "./src/Matrix.h"
 
 #define NUM_OF_TRIANGLES 100
 #define PRINT_TRIANGLE(v, padding) print_triangle(v, padding, #v)
@@ -16,14 +19,11 @@ void print_triangle(triangle t, int padding, char *name);
 
 int main(void)
 {
-    triangle t;
+    Mat m;
 
-    t.p[0] = Vec3_new(0,0,0);
-    t.p[1] = Vec3_new(0,1,0);
-    t.p[2] = Vec3_new(1,1,0);
-
-    PRINT_TRIANGLE(t, 4);
-
+    m = mat_alloc(5,5);
+    mat_identity_mat(m);
+    MAT_PRINT(m);
     return 0;
 }
 
