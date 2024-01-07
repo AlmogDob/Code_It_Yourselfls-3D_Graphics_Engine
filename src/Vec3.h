@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <assert.h>
 
 #define VEC3_PRINT(v) Vec3_print(v, #v)
 
@@ -26,6 +27,7 @@ Vec3 Vec3_rotate_around_x(Vec3 v, Vec3 center, float angle);
 Vec3 Vec3_rotate_around_y(Vec3 v, Vec3 center, float angle);
 Vec3 Vec3_rotate_around_z(Vec3 v, Vec3 center, float angle);
 void Vec3_print(Vec3 v, char *name);
+void Vec3_init_vec(Vec3 *v);
 
 #endif //VEC3_H_
 
@@ -39,6 +41,7 @@ Vec3 Vec3_new(float x, float y, float z)
     result.x = x;
     result.y = y;
     result.z = z;
+    result.w = 1;
     return result;
 }
 
@@ -74,13 +77,15 @@ Vec3 Vec3_mul(Vec3 *v, float factor)
 
 Vec3 Vec3_div(Vec3 *v, float factor)
 {
-    if (!factor) {
-        factor = 1.0f;
+    // assert(factor != 0);
+    if (factor == 0) {
+        factor = 1;
     }
     Vec3 result = {
         .x = v->x / factor,
         .y = v->y / factor,
         .z = v->z / factor,
+        .w = v->w / factor,
     };
     return result;
 }
@@ -163,5 +168,12 @@ void Vec3_print(Vec3 v, char *name)
     printf("%s: (%g, %g, %g)\n", name, v.x, v.y, v.z);
 }
 
+void Vec3_init_vec(Vec3 *v)
+{
+    v->x = 0;
+    v->y = 0;
+    v->z = 0;
+    v->w = 1;
+}
 
 #endif //VEC3_IMPLEMENTATION

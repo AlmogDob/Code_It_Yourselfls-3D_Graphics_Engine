@@ -19,11 +19,21 @@ void print_triangle(triangle t, int padding, char *name);
 
 int main(void)
 {
-    Mat m;
+    Mat m, n, dst;
 
-    m = mat_alloc(5,5);
+    m = mat_alloc(3,3);
+    n = mat_alloc(3,3);
+    dst = mat_alloc(3,3);
+    mat_identity_mat(n);
     mat_identity_mat(m);
+    MAT_AT(m,2,2) = 0;
+    MAT_AT(m,1,2) = 1;
     MAT_PRINT(m);
+    MAT_AT(n,0,0) = 2;
+    MAT_AT(n,2,1) = 1;
+    MAT_PRINT(n);
+    mat_dot(dst, n, m);
+    MAT_PRINT(dst);
     return 0;
 }
 

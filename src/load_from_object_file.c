@@ -87,7 +87,7 @@ int load_from_object_file(mesh *this_mesh, char *file_name)
     // printf("before first while\n");
     /*test*/
     while((length = my_getline(line, MAXLINE, fp)) != 0) {
-        
+        Vec3_init_vec(&verts[verts_counter]);
         if (line[0] == 'v' && line[1] == ' ') {
             for (i = 2, j = 0; (c = line[i]) != '\n'; i++) {
                 /*test*/
@@ -148,6 +148,7 @@ int load_from_object_file(mesh *this_mesh, char *file_name)
                 word[j] = '\0';
                 number = (float)atof(word);
                 verts[verts_counter].z = number;
+                // verts[verts_counter].w = 1;
                 // dprintF(verts[verts_counter].z);
                 // dprintF(number);
 
