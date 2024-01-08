@@ -76,6 +76,7 @@ void update_rotY_mat(float Angle_rad);
 void update_rotZ_mat(float Angle_rad);
 void update_trans_mat(float x, float y, float z);
 void update_proj_mat(float fov_deg, float aspect_ratio, float near, float far);
+void update_point_at_mat(Vec3 pos, Vec3 target, Vec3 up);
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -97,20 +98,22 @@ mesh teapot_mesh;
 mesh axis_mesh;
 mesh *mesh_to_use;
 triangle triangles_to_render[MAX_NUM_OF_TRIANGLES];
-Mat proj_mat, rotZ_mat, rotY_mat,
-rotX_mat, trans_mat, world_mat, temp;
-Vec3 camera;
+Mat proj_mat, rotZ_mat, rotY_mat, rotX_mat, 
+trans_mat, world_mat, temp, point_at_mat, camera_mat,
+view_mat, camera_rotation_mat;
+Mat invers_point_at_mat;    /* Look at */
+Vec3 camera_vector, look_dir, up_vector, target_vector, forward_vector;
 Uint32 previous_frame_time = 0;
 
 int current_MAX_num_of_triangles = 0;
-float theta = 0;
+float theta = 0, Yaw = 0;
 int number_of_triangles_to_render = 0;
 float Near, Aspect_Ratio, Far, FoV;
 
 int space_bar_was_pressed = 0;
 int to_render = 1;
 int to_update = 1;
-int to_flip_y = 0;
+int to_flip_y = 1;
 
 
 int main()
@@ -243,6 +246,11 @@ void setup(void)
     trans_mat = mat_alloc(4,4);
     world_mat = mat_alloc(4,4);
     temp = mat_alloc(4,4);
+    point_at_mat = mat_alloc(4,4);
+    invers_point_at_mat = mat_alloc(4,4);
+    camera_mat = mat_alloc(4,4);
+    view_mat = mat_alloc(4,4);
+    camera_rotation_mat = mat_alloc(4,4);
 
     mat_fill(proj_mat, 0.0f);
     mat_fill(rotZ_mat, 0.0f);
@@ -251,8 +259,18 @@ void setup(void)
     mat_fill(trans_mat, 0.0f);
     mat_fill(world_mat, 0.0f);
     mat_fill(temp, 0.0f);
+    mat_fill(point_at_mat, 0.0f);
+    mat_fill(invers_point_at_mat, 0.0f);
+    mat_fill(camera_mat, 0.0f);
+    mat_fill(view_mat, 0.0f);
+    mat_fill(view_mat, 0.0f);
 
     update_proj_mat(FoV, Aspect_Ratio, Near, Far);
+
+    camera_vector = Vec3_new(0, 0, 0);
+    up_vector = Vec3_new(0, 1, 0);
+    target_vector = Vec3_new(0, 0, 1);
+
 }
 
 void process_input(void)
@@ -282,6 +300,36 @@ void process_input(void)
                         break;
                     }
                 }
+                if (event.key.keysym.sym == SDLK_UP) {
+                    camera_vector.y += 8.0f * delta_time;
+                    // VEC3_PRINT(camera_vector);
+                }
+                if (event.key.keysym.sym == SDLK_DOWN) {
+                    camera_vector.y -= 8.0f * delta_time;
+                    // VEC3_PRINT(camera_vector);
+                }
+                if (event.key.keysym.sym == SDLK_LEFT) {
+                    camera_vector.x -= 8.0f * delta_time;
+                    // VEC3_PRINT(camera_vector);
+                }
+                if (event.key.keysym.sym == SDLK_RIGHT) {
+                    camera_vector.x += 8.0f * delta_time;
+                    // VEC3_PRINT(camera_vector);
+                }
+                if (event.key.keysym.sym == SDLK_a) {
+                    Yaw += 2.0f * delta_time;
+                    // VEC3_PRINT(camera_vector);
+                }
+                if (event.key.keysym.sym == SDLK_d) {
+                    Yaw -= 2.0f * delta_time;
+                    // VEC3_PRINT(camera_vector);
+                }
+                if (event.key.keysym.sym == SDLK_w) {
+                    camera_vector = Vec3_add(&camera_vector, &forward_vector);
+                }
+                if (event.key.keysym.sym == SDLK_s) {
+                    camera_vector = Vec3_sub(&camera_vector, &forward_vector);
+                }
                 break;
         }
     }
@@ -302,11 +350,29 @@ void update(void)
 
     /* ---------------------------------------------- */
 
-    theta += 1.0f * delta_time;
+    // theta += 1.0f * delta_time;
+
+    target_vector = Vec3_new(0, 0, 1);
+    update_rotY_mat(Yaw);
+    mat_copy(camera_rotation_mat, rotY_mat);
+    look_dir = mat4x4_dot_vec3_with_w(camera_rotation_mat, &target_vector);
+    target_vector = Vec3_add(&camera_vector, &look_dir);
+    update_point_at_mat(camera_vector, target_vector, up_vector);
+    camera_mat = point_at_mat;
+    view_mat = invers_point_at_mat;
+
+    forward_vector = Vec3_mul(&look_dir, 8.0f * delta_time);
+
+    
+
+
+
+    /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 
     update_rotZ_mat(theta);
-    update_rotX_mat(theta * 0.5f);
-    update_trans_mat(0.0f, 0.0f, 40.0f);
+    update_rotX_mat((0*PI)/180);
+    update_rotY_mat(0);
+    update_trans_mat(0.0f, 0.0f, 10.0f);
     // update_proj_mat(FoV, Aspect_Ratio, Near, Far);
     
     mat_fill(world_mat, 0.0f);
@@ -314,10 +380,11 @@ void update(void)
     
     mat_dot(world_mat, rotZ_mat, rotX_mat);
     mat_dot(temp, world_mat, trans_mat);
-    world_mat = temp;
+
+    mat_copy(world_mat, temp);
 
     /* Create Triangles */
-    triangle projected_tri, transformed_tri, tri;
+    triangle projected_tri, transformed_tri, viewed_tri,tri;
     Vec3 normal, line1, line2, light_position;
     Vec3 offset_view = {1,1,0,0};
     float dp;
@@ -337,11 +404,11 @@ void update(void)
         normal = Vec3_cross(&line1, &line2);
         Vec3_normalize(&normal);
 
-        if (Vec3_dot(normal, Vec3_sub(&transformed_tri.p[0], &camera)) < 0.0f) {
+        if (Vec3_dot(normal, Vec3_sub(&transformed_tri.p[0], &camera_vector)) < 0.0f) {
             
             /* Illumination */
             tri_color = white_color;
-            light_position = Vec3_new(0.0f, 0.0f, -1.0f);
+            light_position = Vec3_new(0.0f, 1.0f, -1.0f);
             Vec3_normalize(&light_position);
             
             dp = Vec3_dot(normal, light_position);
@@ -353,9 +420,15 @@ void update(void)
             tri_color.g *= dp;
             tri_color.b *= dp;
 
-            projected_tri.p[0] = mat4x4_dot_vec3_with_w(proj_mat, &transformed_tri.p[0]);
-            projected_tri.p[1] = mat4x4_dot_vec3_with_w(proj_mat, &transformed_tri.p[1]);
-            projected_tri.p[2] = mat4x4_dot_vec3_with_w(proj_mat, &transformed_tri.p[2]);
+            viewed_tri.p[0] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[0]);
+            viewed_tri.p[1] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[1]);
+            viewed_tri.p[2] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[2]);
+            
+            // viewed_tri = transformed_tri;
+
+            projected_tri.p[0] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[0]);
+            projected_tri.p[1] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[1]);
+            projected_tri.p[2] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[2]);
 
             projected_tri.p[0] = Vec3_div(&projected_tri.p[0], projected_tri.p[0].w);
             projected_tri.p[1] = Vec3_div(&projected_tri.p[1], projected_tri.p[1].w);
@@ -374,11 +447,10 @@ void update(void)
             projected_tri.my_color = tri_color;
             triangles_to_render[number_of_triangles_to_render] = projected_tri;
             number_of_triangles_to_render++;
-            // triangle_fill(renderer, projected_tri, tri_color);
-            // SDL_DrawTriangle(renderer, projected_tri, white_color);
-
         }
     } 
+
+    /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 
 }
 
@@ -671,4 +743,34 @@ void update_proj_mat(float fov_deg, float aspect_ratio, float near, float far)
     MAT_AT(proj_mat, 3, 2) = (-far * near)/(far - near);
     MAT_AT(proj_mat, 2, 3) = 1.0f;
     MAT_AT(proj_mat, 3, 3) = 0.0f;
+}
+
+void update_point_at_mat(Vec3 pos, Vec3 target, Vec3 up)
+{
+    /* Calculate new forward direction */
+    Vec3 new_forward = Vec3_sub(&target, &pos);
+    Vec3_normalize(&new_forward);
+
+    /* Calculate new up direction */
+    Vec3 a = Vec3_mul(&new_forward, Vec3_dot(up, new_forward));
+    Vec3 new_up = Vec3_sub(&up, &a);
+    Vec3_normalize(&new_up);
+
+    /* Calculate new right direction */
+    Vec3 new_right = Vec3_cross(&new_up, &new_forward);
+
+    /* Construct dimensioning and translation matrix */
+    MAT_AT(point_at_mat, 0, 0) = new_right.x;   MAT_AT(point_at_mat, 0, 1) = new_right.y;   MAT_AT(point_at_mat, 0, 2) = new_right.z;
+    MAT_AT(point_at_mat, 1, 0) = new_up.x;      MAT_AT(point_at_mat, 1, 1) = new_up.y;      MAT_AT(point_at_mat, 1, 2) = new_up.z;
+    MAT_AT(point_at_mat, 2, 0) = new_forward.x; MAT_AT(point_at_mat, 2, 1) = new_forward.y; MAT_AT(point_at_mat, 2, 2) = new_forward.z;
+    MAT_AT(point_at_mat, 3, 0) = pos.x;         MAT_AT(point_at_mat, 3, 1) = pos.y;         MAT_AT(point_at_mat, 3, 2) = pos.z;         MAT_AT(point_at_mat, 3, 3) = 1.0f;
+
+    /* Construct the invers of dimensioning and translation matrix */
+    MAT_AT(invers_point_at_mat, 0, 0) = MAT_AT(point_at_mat, 0, 0);     MAT_AT(invers_point_at_mat, 0, 1) = MAT_AT(point_at_mat, 1, 0);     MAT_AT(invers_point_at_mat, 0, 2) = MAT_AT(point_at_mat, 2, 0);
+    MAT_AT(invers_point_at_mat, 1, 0) = MAT_AT(point_at_mat, 0, 1);     MAT_AT(invers_point_at_mat, 1, 1) = MAT_AT(point_at_mat, 1, 1);     MAT_AT(invers_point_at_mat, 1, 2) = MAT_AT(point_at_mat, 2, 1);
+    MAT_AT(invers_point_at_mat, 2, 0) = MAT_AT(point_at_mat, 0, 2);     MAT_AT(invers_point_at_mat, 2, 1) = MAT_AT(point_at_mat, 1, 2);     MAT_AT(invers_point_at_mat, 2, 2) = MAT_AT(point_at_mat, 2, 2);
+    MAT_AT(invers_point_at_mat, 3, 0) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 0) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 0) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 0));  
+    MAT_AT(invers_point_at_mat, 3, 1) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 1) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 1) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 1));  
+    MAT_AT(invers_point_at_mat, 3, 2) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 2) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 2) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 2));    
+    MAT_AT(invers_point_at_mat, 3, 3) = 1.0f;
 }
