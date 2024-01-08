@@ -169,7 +169,7 @@ int initialize_window(void)
         return -1;
     }
 
-    // simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./simple_shape/simple_shape.obj");
+    // simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./obj_files/simple_shape/simple_shape.obj");
     // if (!simple_shape_mesh.num_of_triangles) {
     //     fprintf(stderr, "Error loading 'simple shape'.\n");
     //     return -1;
@@ -181,7 +181,7 @@ int initialize_window(void)
         return -1;
     }
 
-    // lego_man_mesh.num_of_triangles = load_from_object_file(&lego_man_mesh, "./lego_man/LEGO_Man2.obj");
+    // lego_man_mesh.num_of_triangles = load_from_object_file(&lego_man_mesh, "./obj_files/lego_man/LEGO_Man2.0.obj");
     // if (!lego_man_mesh.num_of_triangles) {
     //     fprintf(stderr, "Error loading 'lego man'.\n");
     //     return -1;
@@ -193,18 +193,18 @@ int initialize_window(void)
     //     return -1;
     // }
 
-    teapot_mesh.num_of_triangles = load_from_object_file(&teapot_mesh, "./obj_files/teapot.obj");
-    if (!teapot_mesh.num_of_triangles) {
-        fprintf(stderr, "Error loading 'teapot'.\n");
-        return -1;
-    }
+    // teapot_mesh.num_of_triangles = load_from_object_file(&teapot_mesh, "./obj_files/teapot.obj");
+    // if (!teapot_mesh.num_of_triangles) {
+    //     fprintf(stderr, "Error loading 'teapot'.\n");
+    //     return -1;
+    // }
 
     return 0;
 }
 
 void setup(void)
 {    
-    mesh_to_use = &teapot_mesh;
+    mesh_to_use = &video_ship_mesh;
 
     white_color.a = 255;
     white_color.b = 255;
@@ -298,7 +298,7 @@ void update(void)
 
     update_rotZ_mat(theta);
     update_rotX_mat(theta * 0.5f);
-    update_trans_mat(0.0f, 0.0f, 16.0f);
+    update_trans_mat(0.0f, 0.0f, 400.0f);
     // update_proj_mat(FoV, Aspect_Ratio, Near, Far);
     
     mat_fill(world_mat, 0.0f);
@@ -309,7 +309,7 @@ void update(void)
     world_mat = temp;
 
     /* Create Triangles */
-    triangle projected_tri, translated_tri, rotatedZ_tri, rotatedZX_tri, transformed_tri, tri;
+    triangle projected_tri, transformed_tri, tri;
     Vec3 normal, line1, line2, light_position;
     Vec3 offset_view = {1,1,0,0};
     float dp;
@@ -385,7 +385,7 @@ void render(void)
     // dprintINT(number_of_triangles_to_render);
     for (int i = 0; i < number_of_triangles_to_render; i++) {
         triangle_fill(renderer, triangles_to_render[i], triangles_to_render[i].my_color);
-        // SDL_DrawTriangle(renderer, triangles_to_render[i], white_color);
+        // SDL_DrawTriangle(renderer, triangles_to_render[i], black_color);
 
     }
     
