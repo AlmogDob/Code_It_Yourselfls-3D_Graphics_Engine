@@ -94,6 +94,7 @@ mesh video_ship_mesh;
 mesh lego_man_mesh;
 mesh bolt_mesh;
 mesh teapot_mesh;
+mesh axis_mesh;
 mesh *mesh_to_use;
 triangle triangles_to_render[MAX_NUM_OF_TRIANGLES];
 Mat proj_mat, rotZ_mat, rotY_mat,
@@ -109,6 +110,7 @@ float Near, Aspect_Ratio, Far, FoV;
 int space_bar_was_pressed = 0;
 int to_render = 1;
 int to_update = 1;
+int to_flip_y = 0;
 
 
 int main()
@@ -181,6 +183,12 @@ int initialize_window(void)
         return -1;
     }
 
+    axis_mesh.num_of_triangles = load_from_object_file(&axis_mesh, "./obj_files/axis.obj");
+    if (!video_ship_mesh.num_of_triangles) {
+        fprintf(stderr, "Error loading 'axis'.\n");
+        return -1;
+    }
+
     // lego_man_mesh.num_of_triangles = load_from_object_file(&lego_man_mesh, "./obj_files/lego_man/LEGO_Man2.0.obj");
     // if (!lego_man_mesh.num_of_triangles) {
     //     fprintf(stderr, "Error loading 'lego man'.\n");
@@ -204,7 +212,7 @@ int initialize_window(void)
 
 void setup(void)
 {    
-    mesh_to_use = &video_ship_mesh;
+    mesh_to_use = &axis_mesh;
 
     white_color.a = 255;
     white_color.b = 255;
@@ -298,7 +306,7 @@ void update(void)
 
     update_rotZ_mat(theta);
     update_rotX_mat(theta * 0.5f);
-    update_trans_mat(0.0f, 0.0f, 400.0f);
+    update_trans_mat(0.0f, 0.0f, 40.0f);
     // update_proj_mat(FoV, Aspect_Ratio, Near, Far);
     
     mat_fill(world_mat, 0.0f);
@@ -379,13 +387,13 @@ void render(void)
     SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
     SDL_RenderClear(renderer);
 /* -------------------------------------------------------------------------------------------------- */
-    // qsort_tri(triangles_to_render, 0, number_of_triangles_to_render);
-    insertion_sort_tri(triangles_to_render, number_of_triangles_to_render);
+    qsort_tri(triangles_to_render, 0, number_of_triangles_to_render - 1);
+    // insertion_sort_tri(triangles_to_render, number_of_triangles_to_render);
     
     // dprintINT(number_of_triangles_to_render);
     for (int i = 0; i < number_of_triangles_to_render; i++) {
         triangle_fill(renderer, triangles_to_render[i], triangles_to_render[i].my_color);
-        // SDL_DrawTriangle(renderer, triangles_to_render[i], black_color);
+        SDL_DrawTriangle(renderer, triangles_to_render[i], black_color);
 
     }
     
@@ -465,9 +473,16 @@ void SDL_DrawTriangle(SDL_Renderer *current_renderer, triangle t, SDL_Color colo
 {
     SDL_SetRenderDrawColor(current_renderer, color.r, color.g, color.b, color.a);
 
-    SDL_RenderDrawLineF(renderer, t.p[0].x, WINDOW_HEIGHT - t.p[0].y, t.p[1].x, WINDOW_HEIGHT - t.p[1].y);
-    SDL_RenderDrawLineF(renderer, t.p[1].x, WINDOW_HEIGHT - t.p[1].y, t.p[2].x, WINDOW_HEIGHT - t.p[2].y);
-    SDL_RenderDrawLineF(renderer, t.p[2].x, WINDOW_HEIGHT - t.p[2].y, t.p[0].x, WINDOW_HEIGHT - t.p[0].y);
+    if (to_flip_y) {
+        SDL_RenderDrawLineF(renderer, t.p[0].x, WINDOW_HEIGHT - t.p[0].y, t.p[1].x, WINDOW_HEIGHT - t.p[1].y);
+        SDL_RenderDrawLineF(renderer, t.p[1].x, WINDOW_HEIGHT - t.p[1].y, t.p[2].x, WINDOW_HEIGHT - t.p[2].y);
+        SDL_RenderDrawLineF(renderer, t.p[2].x, WINDOW_HEIGHT - t.p[2].y, t.p[0].x, WINDOW_HEIGHT - t.p[0].y);
+    } else {
+        SDL_RenderDrawLineF(renderer, t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y);
+        SDL_RenderDrawLineF(renderer, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
+        SDL_RenderDrawLineF(renderer, t.p[2].x, t.p[2].y, t.p[0].x, t.p[0].y);
+
+    }
 }
 
 float edge_cross(Vec2 *a, Vec2 *b, Vec2 *p)
@@ -543,7 +558,12 @@ void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color)
 
                 // draw_pixel(x, y, color);
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-                SDL_RenderDrawPoint(renderer, x, WINDOW_HEIGHT - y);
+                
+                if (to_flip_y) {
+                    SDL_RenderDrawPoint(renderer, x, WINDOW_HEIGHT - y);
+                } else {
+                    SDL_RenderDrawPoint(renderer, x, y);
+                }               
             }
             w0 += delta_w0_col;
             w1 += delta_w1_col;
