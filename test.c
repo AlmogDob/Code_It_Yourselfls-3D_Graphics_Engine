@@ -7,6 +7,11 @@
 #define NUM_OF_TRIANGLES 100
 #define PRINT_TRIANGLE(v, padding) print_triangle(v, padding, #v)
 
+#define dprintS(expr) printf(#expr " = %s\n", expr)
+#define dprintI(expr) printf(#expr " = %d\n", expr)
+#define dprintC(expr) printf(#expr " = %c\n", expr)
+#define dprintF(expr) printf(#expr " = %g\n", expr)
+
 typedef struct {
     Vec3 p[3];
 } triangle;
@@ -19,21 +24,27 @@ void print_triangle(triangle t, int padding, char *name);
 
 int main(void)
 {
-    Mat m, n, dst;
+    int a, b, c, *d;
 
-    m = mat_alloc(3,3);
-    n = mat_alloc(3,3);
-    dst = mat_alloc(3,3);
-    mat_identity_mat(n);
-    mat_identity_mat(m);
-    MAT_AT(m,2,2) = 0;
-    MAT_AT(m,1,2) = 1;
-    MAT_PRINT(m);
-    MAT_AT(n,0,0) = 2;
-    MAT_AT(n,2,1) = 1;
-    MAT_PRINT(n);
-    mat_dot(dst, n, m);
-    MAT_PRINT(dst);
+    a = 1;
+    c = a;
+    a = 2;
+
+    dprintI(a);
+    dprintI(c);
+    d = &c;
+    dprintI(*d);
+
+    a = 3;
+    d = &a;
+    
+    dprintI(a);
+    dprintI(*d);
+
+    *d = 4;
+    dprintI(a);
+    dprintI(c);
+    dprintI(*d);
     return 0;
 }
 

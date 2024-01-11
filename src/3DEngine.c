@@ -28,9 +28,11 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 #define FRAME_TARGET_TIME (1000 / FPS)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define PRINT_TRIANGLE(t, padding) print_triangle(t, padding, #t)
+#define PRINT_TRIANGLE(t) print_triangle(t, 4, #t)
 
-#define dprintINT(expr) printf(#expr " = %d\n", expr)
+#define dprintS(expr) printf(#expr " = %s\n", expr)
+#define dprintI(expr) printf(#expr " = %d\n", expr)
+#define dprintC(expr) printf(#expr " = %c\n", expr)
 #define dprintF(expr) printf(#expr " = %g\n", expr)
 
 #define PI 3.14159265359
@@ -49,6 +51,11 @@ typedef struct {
     triangle tris[MAX_NUM_OF_TRIANGLES];
     int num_of_triangles;
 } mesh;
+
+typedef struct {
+    Vec3 point;
+    Vec3 normal;
+} plane;
 
 #define MESH_TYPE
 #include "load_from_object_file.h"
@@ -77,6 +84,10 @@ void update_rotZ_mat(float Angle_rad);
 void update_trans_mat(float x, float y, float z);
 void update_proj_mat(float fov_deg, float aspect_ratio, float near, float far);
 void update_point_at_mat(Vec3 pos, Vec3 target, Vec3 up);
+void change_camera_positoin(void);
+Vec3 vector_intersect_plane(Vec3 plane_p, Vec3 plane_n, Vec3 line_start, Vec3 line_end);
+int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle in_tri, triangle *out_tri1, triangle *out_tri2);
+float dist_plane_point(Vec3 plane_p, Vec3 plane_n, Vec3 point);
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -102,12 +113,14 @@ Mat proj_mat, rotZ_mat, rotY_mat, rotX_mat,
 trans_mat, world_mat, temp, point_at_mat, camera_mat,
 view_mat, camera_rotation_mat;
 Mat invers_point_at_mat;    /* Look at */
-Vec3 camera_vector, look_dir, up_vector, target_vector, forward_vector;
+Vec3 camera_vector, look_dir, up_vector, target_vector, forward_vector,
+camera_vector_offset_world, camera_vector_offset_camera, look_dir_XZ_porj;
 Uint32 previous_frame_time = 0;
+plane near_plane;
 
 int current_MAX_num_of_triangles = 0;
-float theta = 0, Yaw = 0;
-int number_of_triangles_to_render = 0;
+float theta = 0, Yaw = 0, current_look_dir_theta = 0;
+int number_of_triangles_to_render = 0, number_of_cliped_triangles = 0;
 float Near, Aspect_Ratio, Far, FoV;
 
 int space_bar_was_pressed = 0;
@@ -270,7 +283,10 @@ void setup(void)
     camera_vector = Vec3_new(0, 0, 0);
     up_vector = Vec3_new(0, 1, 0);
     target_vector = Vec3_new(0, 0, 1);
+    camera_vector_offset_world = camera_vector_offset_camera = Vec3_new(0, 0, 0);
 
+    near_plane.point = Vec3_new(0.0f, 0.0f, Near + 100);
+    near_plane.normal = look_dir;
 }
 
 void process_input(void)
@@ -309,11 +325,13 @@ void process_input(void)
                     // VEC3_PRINT(camera_vector);
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
-                    camera_vector.x -= 8.0f * delta_time;
+                    camera_vector_offset_camera.x = -8.0f * delta_time;
+                    change_camera_positoin();
                     // VEC3_PRINT(camera_vector);
                 }
                 if (event.key.keysym.sym == SDLK_RIGHT) {
-                    camera_vector.x += 8.0f * delta_time;
+                    camera_vector_offset_camera.x = 8.0f * delta_time;
+                    change_camera_positoin();
                     // VEC3_PRINT(camera_vector);
                 }
                 if (event.key.keysym.sym == SDLK_a) {
@@ -329,6 +347,11 @@ void process_input(void)
                 }
                 if (event.key.keysym.sym == SDLK_s) {
                     camera_vector = Vec3_sub(&camera_vector, &forward_vector);
+                }
+                if (event.key.keysym.sym == SDLK_p) {
+                    dprintI(number_of_triangles_to_render);
+                    PRINT_TRIANGLE(triangles_to_render[0]);
+                    dprintI(number_of_cliped_triangles);
                 }
                 break;
         }
@@ -363,8 +386,8 @@ void update(void)
 
     forward_vector = Vec3_mul(&look_dir, 8.0f * delta_time);
 
-    
 
+    
 
 
     /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
@@ -423,30 +446,44 @@ void update(void)
             viewed_tri.p[0] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[0]);
             viewed_tri.p[1] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[1]);
             viewed_tri.p[2] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[2]);
-            
-            // viewed_tri = transformed_tri;
 
-            projected_tri.p[0] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[0]);
-            projected_tri.p[1] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[1]);
-            projected_tri.p[2] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[2]);
+            /* Clip viewed triangle against near plane;
+            this could form two additional triangles. */
+            number_of_cliped_triangles = 0;
+            triangle clipped[2];
+            number_of_cliped_triangles = triangle_clip_against_plane(near_plane.point, near_plane.normal, viewed_tri, &clipped[0], &clipped[1]);
 
-            projected_tri.p[0] = Vec3_div(&projected_tri.p[0], projected_tri.p[0].w);
-            projected_tri.p[1] = Vec3_div(&projected_tri.p[1], projected_tri.p[1].w);
-            projected_tri.p[2] = Vec3_div(&projected_tri.p[2], projected_tri.p[2].w);
+            dprintI(number_of_cliped_triangles);
 
-            /* Scale into view */
-            projected_tri.p[0] = Vec3_add(&projected_tri.p[0], &offset_view); 
-            projected_tri.p[1] = Vec3_add(&projected_tri.p[1], &offset_view); 
-            projected_tri.p[2] = Vec3_add(&projected_tri.p[2], &offset_view); 
-
-            for (int j = 0; j < 3; j++) {
-                projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
-                projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
+            if (number_of_cliped_triangles == -1) {
+                fprintf(stderr, "Error clipping triangels.\n");
+                return;
             }
-            projected_tri.mid_z = (projected_tri.p[0].z + projected_tri.p[1].z + projected_tri.p[2].z) / 3.0f;
-            projected_tri.my_color = tri_color;
-            triangles_to_render[number_of_triangles_to_render] = projected_tri;
-            number_of_triangles_to_render++;
+
+            for (int n = 0; n < 1; n++) {
+
+                projected_tri.p[0] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[0]);
+                projected_tri.p[1] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[1]);
+                projected_tri.p[2] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[2]);
+
+                projected_tri.p[0] = Vec3_div(&projected_tri.p[0], projected_tri.p[0].w);
+                projected_tri.p[1] = Vec3_div(&projected_tri.p[1], projected_tri.p[1].w);
+                projected_tri.p[2] = Vec3_div(&projected_tri.p[2], projected_tri.p[2].w);
+
+                /* Scale into view */
+                projected_tri.p[0] = Vec3_add(&projected_tri.p[0], &offset_view); 
+                projected_tri.p[1] = Vec3_add(&projected_tri.p[1], &offset_view); 
+                projected_tri.p[2] = Vec3_add(&projected_tri.p[2], &offset_view); 
+
+                for (int j = 0; j < 3; j++) {
+                    projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
+                    projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
+                }
+                projected_tri.mid_z = (projected_tri.p[0].z + projected_tri.p[1].z + projected_tri.p[2].z) / 3.0f;
+                projected_tri.my_color = tri_color;
+                triangles_to_render[number_of_triangles_to_render] = projected_tri;
+                number_of_triangles_to_render++;
+            }
         }
     } 
 
@@ -773,4 +810,114 @@ void update_point_at_mat(Vec3 pos, Vec3 target, Vec3 up)
     MAT_AT(invers_point_at_mat, 3, 1) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 1) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 1) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 1));  
     MAT_AT(invers_point_at_mat, 3, 2) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 2) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 2) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 2));    
     MAT_AT(invers_point_at_mat, 3, 3) = 1.0f;
+}
+
+void change_camera_positoin(void)
+{
+    look_dir_XZ_porj = Vec3_new(look_dir.x, 0.0f, look_dir.z);
+    current_look_dir_theta = atan2f(look_dir_XZ_porj.z, look_dir_XZ_porj.x);
+    camera_vector_offset_world = Vec3_new(camera_vector_offset_camera.x * sinf((current_look_dir_theta)), 0, -camera_vector_offset_camera.x * cosf(current_look_dir_theta));
+    camera_vector = Vec3_add(&camera_vector, &camera_vector_offset_world);
+    
+}
+
+Vec3 vector_intersect_plane(Vec3 plane_p, Vec3 plane_n, Vec3 line_start, Vec3 line_end)
+{
+    float plane_d, ad, bd, t;
+    Vec3 line_start_to_end, line_to_intersect;
+    
+    Vec3_normalize(&plane_n);
+    plane_d = -Vec3_dot(plane_n, plane_p);
+    ad = Vec3_dot(line_start, plane_n);
+    bd = Vec3_dot(line_end, plane_n);
+    t = (-plane_d - ad) / (bd - ad);
+    line_start_to_end = Vec3_sub(&line_end, &line_start);
+    line_to_intersect = Vec3_mul(&line_start_to_end, t);
+
+    return Vec3_add(&line_start, &line_to_intersect);
+}
+
+/* triangle_clip_against_plane: returns numbers of triangles */
+int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle in_tri, triangle *out_tri1, triangle *out_tri2)
+{
+    /* create two temporarty storage arrays to classify points either side of plane;
+    if distance sign is positive, point lies on "inside" of the plane */
+    Vec3 *inside_points[3]; int number_of_inside_points = 0;
+    Vec3 *outside_points[3]; int number_of_outside_points = 0;
+
+    /* get signed distance of each point in triangle to plane */
+    float d0 = dist_plane_point(plane_p, plane_n, in_tri.p[0]);
+    float d1 = dist_plane_point(plane_p, plane_n, in_tri.p[1]);
+    float d2 = dist_plane_point(plane_p, plane_n, in_tri.p[2]);
+
+    Vec3_normalize(&plane_n);
+
+    if (d0 >= 0) {
+        inside_points[number_of_inside_points++] = &in_tri.p[0];
+    } else {
+        outside_points[number_of_outside_points++] = &in_tri.p[0];
+    }
+    if (d1 >= 0) {
+        inside_points[number_of_inside_points++] = &in_tri.p[1];
+    } else {
+        outside_points[number_of_outside_points++] = &in_tri.p[1];
+    }
+    if (d2 >= 0) {
+        inside_points[number_of_inside_points++] = &in_tri.p[2];
+    } else {
+        outside_points[number_of_outside_points++] = &in_tri.p[2];
+    }
+    
+    /* now classify triangle points, and break the input tirangle into
+    smaller output triangles if required;
+    there are four possible outcomes*/
+
+    if (number_of_inside_points == 0) {
+        return 0;
+    }
+    
+    if (number_of_inside_points == 1) {
+        out_tri1->mid_z = in_tri.mid_z;
+        out_tri1->my_color = in_tri.my_color;
+
+        out_tri1->p[0] = *inside_points[0];
+
+        out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
+        out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, *inside_points[0], *outside_points[1]);
+
+        return 1;
+    }
+
+    if (number_of_inside_points == 2) {
+        out_tri1->mid_z = in_tri.mid_z;
+        out_tri1->my_color = in_tri.my_color;
+        out_tri2->mid_z = in_tri.mid_z;
+        out_tri2->my_color = in_tri.my_color;
+        
+        out_tri1->p[0] = *inside_points[0];
+        out_tri1->p[1] = *inside_points[1];
+        out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, *inside_points[0], *outside_points[0]);
+        
+        out_tri1->p[0] = *inside_points[1];
+        out_tri1->p[1] = out_tri1->p[2];
+        out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, *inside_points[1], *outside_points[0]);
+        
+        return 2;
+    }
+
+    if (number_of_inside_points == 3) {
+        out_tri1 = &in_tri;
+        return 1;
+    }
+
+    return -1;
+
+}
+
+/* dist_plane_point: return signed shortest distance from point to plane*/
+float dist_plane_point(Vec3 plane_p, Vec3 plane_n, Vec3 point)
+{
+    Vec3_normalize(&plane_n);
+    
+    return (Vec3_dot(plane_n, point) - Vec3_dot(plane_n, plane_p));
 }
