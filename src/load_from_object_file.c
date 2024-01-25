@@ -188,7 +188,7 @@ int load_from_object_file(mesh *this_mesh, char *file_name)
                 word[j] = '\0';
                 // dprintS(word);
                 number_int_1 = atoi(word);
-                this_mesh->tris[triangles_counter].p[2] = verts[number_int_1 - 1];
+                this_mesh->tris[triangles_counter].p[0] = verts[number_int_1 - 1];
                 // dprintI(number_int_1);
 
                 if (c == '/') {
@@ -290,7 +290,7 @@ int load_from_object_file(mesh *this_mesh, char *file_name)
                 }
                 word[j] = '\0';
                 number_int_3 = atoi(word);
-                this_mesh->tris[triangles_counter].p[0] = verts[number_int_3 - 1];
+                this_mesh->tris[triangles_counter].p[2] = verts[number_int_3 - 1];
                 // dprintI(number_int_3);
 
 
@@ -386,9 +386,9 @@ int load_from_object_file(mesh *this_mesh, char *file_name)
                 
 
                 if (is_quad) {
-                    this_mesh->tris[triangles_counter].p[0] = verts[number_int_3 - 1];
+                    this_mesh->tris[triangles_counter].p[0] = verts[number_int_2 - 1];
                     this_mesh->tris[triangles_counter].p[1] = verts[number_int_4 - 1];
-                    this_mesh->tris[triangles_counter].p[2] = verts[number_int_2 - 1];
+                    this_mesh->tris[triangles_counter].p[2] = verts[number_int_3 - 1];
                     triangles_counter++;
                 }
                 // dprintI(triangles_counter);

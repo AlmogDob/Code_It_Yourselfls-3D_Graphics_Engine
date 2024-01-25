@@ -254,7 +254,7 @@ void setup(void)
     fps_place.w = 300;
     fps_place.h = 25;
 
-    Near = 0.2f;
+    Near = 0.1f;
     Far = 1000.0f;
     FoV = 90.0f;
     Aspect_Ratio = (float)WINDOW_HEIGHT / (float)WINDOW_WIDTH;
@@ -292,7 +292,7 @@ void setup(void)
     target_vector = Vec3_new(0, 0, 1);
     camera_vector_offset_world = camera_vector_offset_camera = Vec3_new(0, 0, 0);
 
-    near_plane.point = Vec3_new(0.0f, 0.0f, Near);
+    near_plane.point = Vec3_new(0.0f, 0.0f, Near + 0.5);
     near_plane.normal = Vec3_new(0.0f, 0.0f, 1.0f);
 
     /*test*/
@@ -428,7 +428,7 @@ void update(void)
     mat_copy(world_mat, temp);
 
     /* Create Triangles */
-    triangle projected_tri, transformed_tri, viewed_tri,tri;
+    triangle projected_tri, transformed_tri, viewed_tri, tri, temp_tri;
     Vec3 normal, line1, line2, light_position;
     Vec3 offset_view = {1,1,0,0};
     float dp;
@@ -472,6 +472,21 @@ void update(void)
 
             viewed_tri.my_color = tri_color;
 
+            temp_tri.p[0] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[0]);
+            temp_tri.p[1] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[1]);
+            temp_tri.p[2] = mat4x4_dot_vec3_with_w(proj_mat, &viewed_tri.p[2]);
+            
+            temp_tri.p[0] = Vec3_div(&temp_tri.p[0], temp_tri.p[0].w);
+            temp_tri.p[1] = Vec3_div(&temp_tri.p[1], temp_tri.p[1].w);
+            temp_tri.p[2] = Vec3_div(&temp_tri.p[2], temp_tri.p[2].w);
+
+            /* Scale into view */
+            temp_tri.p[0] = Vec3_add(&temp_tri.p[0], &offset_view); 
+            temp_tri.p[1] = Vec3_add(&temp_tri.p[1], &offset_view); 
+            temp_tri.p[2] = Vec3_add(&temp_tri.p[2], &offset_view);
+
+            viewed_tri.mid_z = (temp_tri.p[0].z + temp_tri.p[1].z + temp_tri.p[2].z) / 3.0f;
+
             /* Clip viewed triangle against near plane;
             this could form two additional triangles. */
             number_of_cliped_triangles = 0;
@@ -509,7 +524,7 @@ void update(void)
                     projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
                     projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
                 }
-                projected_tri.mid_z = (projected_tri.p[0].z + projected_tri.p[1].z + projected_tri.p[2].z) / 3.0f;
+                projected_tri.mid_z = viewed_tri.mid_z;
                 projected_tri.my_color = clipped[n].my_color;
                 // dprintF(projected_tri.mid_z);
                 // projected_tri.my_color = tri_color;
@@ -910,22 +925,22 @@ int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle *in_tri, tr
     }
     
     if (number_of_inside_points == 1 && number_of_outside_points == 2) {
-        // out_tri1->mid_z = in_tri.mid_z;
+        out_tri1->mid_z = in_tri->mid_z;
         (out_tri1->my_color) = in_tri->my_color;
 
-        // if (Yaw > 0) {
-        //     out_tri1->p[0] = inside_points[0];
-        //     out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
-        // } else {
-        //     out_tri1->p[0] = inside_points[0];
-        //     out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
-        // }
-
-        out_tri1->p[0] = inside_points[0];
+        if (Yaw > 0) {
+            out_tri1->p[0] = inside_points[0];
             out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
             out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
+        } else {
+            out_tri1->p[0] = inside_points[0];
+            out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
+            out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
+        }
+
+        // out_tri1->p[0] = inside_points[0];
+        // out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
+        // out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
 
         // PRINT_TRIANGLE(*out_tri1);
         // printf("option 1\n");
@@ -933,9 +948,9 @@ int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle *in_tri, tr
     }
 
     if (number_of_inside_points == 2 && number_of_outside_points == 1) {
-        // out_tri1->mid_z = in_tri->mid_z;
+        out_tri1->mid_z = in_tri->mid_z;
         out_tri1->my_color = in_tri->my_color;
-        // out_tri2->mid_z = in_tri->mid_z;
+        out_tri2->mid_z = in_tri->mid_z;
         // out_tri2->my_color = black_color;
         out_tri2->my_color = in_tri->my_color;
         
@@ -943,39 +958,39 @@ int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle *in_tri, tr
         // dprintF(out_tri1->mid_z);
         // dprintF(out_tri2->mid_z);
 
-        // if (Yaw > 0) {
-        //     out_tri1->p[2] = inside_points[0];
-        //     out_tri1->p[1] = inside_points[1];
-        //     out_tri1->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        // } else {
-        //     out_tri1->p[0] = inside_points[0];
-        //     out_tri1->p[1] = inside_points[1];
-        //     out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        // }
-
-        out_tri1->p[2] = inside_points[0];
+        if (Yaw > 0) {
+            out_tri1->p[2] = inside_points[0];
             out_tri1->p[1] = inside_points[1];
             out_tri1->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        
-        // if (Yaw > 0) {
-        //     out_tri2->p[0] = inside_points[1];
-        //     out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri2->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
-        // } else {
-        //     out_tri2->p[2] = inside_points[1];
-        //     out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri2->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
-        // }
+        } else {
+            out_tri1->p[0] = inside_points[0];
+            out_tri1->p[1] = inside_points[1];
+            out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
+        }
 
-        out_tri2->p[0] = inside_points[1];
+        // out_tri1->p[2] = inside_points[0];
+        // out_tri1->p[1] = inside_points[1];
+        // out_tri1->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
+        
+        if (Yaw > 0) {
+            out_tri2->p[0] = inside_points[1];
             out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
             out_tri2->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
+        } else {
+            out_tri2->p[2] = inside_points[1];
+            out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
+            out_tri2->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
+        }
+
+        // out_tri2->p[0] = inside_points[1];
+        // out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
+        // out_tri2->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
         // printf("option 2\n");
         return 2;
     }
 
     if (number_of_inside_points == 3) {
-        out_tri1 = in_tri;
+        *out_tri1 = *in_tri;
         // printf("option 3\n");
         return 1;
     }
