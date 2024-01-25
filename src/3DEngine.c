@@ -5,7 +5,8 @@ featured in this video of his:
 https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 
 
-/**/
+/* Does not work */
+
 
 
 #include <time.h>
@@ -28,16 +29,14 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN .*/
 #define FRAME_TARGET_TIME (1000 / FPS)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-#define PRINT_TRIANGLE(t) print_triangle(t, 4, #t)
+#define PRINT_TRIANGLE(t, padding) print_triangle(t, padding, #t)
 
-#define dprintS(expr) printf(#expr " = %s\n", expr)
-#define dprintI(expr) printf(#expr " = %d\n", expr)
-#define dprintC(expr) printf(#expr " = %c\n", expr)
+#define dprintINT(expr) printf(#expr " = %d\n", expr)
 #define dprintF(expr) printf(#expr " = %g\n", expr)
 
 #define PI 3.14159265359
 
-#define MAX_NUM_OF_TRIANGLES 5000
+#define MAX_NUM_OF_TRIANGLES 1000
 #define MAX_NUM_OF_VERTS 3*MAX_NUM_OF_TRIANGLES
 
 
@@ -52,11 +51,6 @@ typedef struct {
     int num_of_triangles;
 } mesh;
 
-typedef struct {
-    Vec3 point;
-    Vec3 normal;
-} plane;
-
 #define MESH_TYPE
 #include "load_from_object_file.h"
 
@@ -69,25 +63,12 @@ void destroy_window(void);
 void fix_framerate(void);
 void print_triangle(triangle t, int padding, char *name);
 void mat4x4_dot_vec3(Vec3 *out, Vec3 *in, Mat m);
-void mat4x4_mult_vec3(Vec3 *out, Vec3 *in, Mat m);
-Vec3 mat4x4_dot_vec3_with_w(Mat m, Vec3 *in);
 void SDL_DrawTriangle(SDL_Renderer *current_renderer, triangle t, SDL_Color color);
 float edge_cross(Vec2 *a, Vec2 *b, Vec2 *p);
 bool is_top_left(Vec2 *start, Vec2 *end);
 void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color);
 void qsort_tri(triangle v[], int left, int right);
 void swap(triangle v[], int i, int j);
-void insertion_sort_tri(triangle A[], int size);
-void update_rotX_mat(float Angle_rad);
-void update_rotY_mat(float Angle_rad);
-void update_rotZ_mat(float Angle_rad);
-void update_trans_mat(float x, float y, float z);
-void update_proj_mat(float fov_deg, float aspect_ratio, float near, float far);
-void update_point_at_mat(Vec3 pos, Vec3 target, Vec3 up);
-void change_camera_positoin(void);
-Vec3 vector_intersect_plane(Vec3 plane_p, Vec3 plane_n, Vec3 line_start, Vec3 line_end);
-int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle *in_tri, triangle *out_tri1, triangle *out_tri2);
-float dist_plane_point(Vec3 plane_p, Vec3 plane_n, Vec3 point);
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -101,33 +82,20 @@ SDL_Color tri_color;
 int game_is_running = 0;
 float delta_time;
 float fps = 0;
+mesh cube_mesh; 
 mesh simple_shape_mesh;
-mesh video_ship_mesh;
-mesh lego_man_mesh;
-mesh bolt_mesh;
-mesh teapot_mesh;
-mesh axis_mesh;
-mesh test_mesh;
-mesh *mesh_to_use;
 triangle triangles_to_render[MAX_NUM_OF_TRIANGLES];
-Mat proj_mat, rotZ_mat, rotY_mat, rotX_mat, 
-trans_mat, world_mat, temp, point_at_mat, camera_mat,
-view_mat, camera_rotation_mat;
-Mat invers_point_at_mat;    /* Look at */
-Vec3 camera_vector, look_dir, up_vector, target_vector, forward_vector,
-camera_vector_offset_world, camera_vector_offset_camera, look_dir_XZ_porj;
+Mat proj_mat, rotZ_mat, rotX_mat;
+Vec3 camera;
 Uint32 previous_frame_time = 0;
-plane near_plane;
 
 int current_MAX_num_of_triangles = 0;
-float theta = 0, Yaw = 0, current_look_dir_theta = 0;
-int number_of_triangles_to_render = 0, number_of_cliped_triangles = 0;
-float Near, Aspect_Ratio, Far, FoV;
+float theta = 0;
+int number_of_triangles_to_render = 0;
 
 int space_bar_was_pressed = 0;
 int to_render = 1;
 int to_update = 1;
-int to_flip_y = 1;
 
 
 int main()
@@ -188,55 +156,17 @@ int initialize_window(void)
         return -1;
     }
 
-    // simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./obj_files/simple_shape/simple_shape.obj");
-    // if (!simple_shape_mesh.num_of_triangles) {
-    //     fprintf(stderr, "Error loading 'simple shape'.\n");
-    //     return -1;
-    // }
+    simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./simple_shape/simple_shape.obj");
+    if (!simple_shape_mesh.num_of_triangles) {
+        fprintf(stderr, "Error loading 'simple shape'.\n");
+        return -1;
+    }
     
-    // video_ship_mesh.num_of_triangles = load_from_object_file(&video_ship_mesh, "./obj_files/Video_Ship/Video_Ship.obj");
-    // if (!video_ship_mesh.num_of_triangles) {
-    //     fprintf(stderr, "Error loading 'video ship'.\n");
-    //     return -1;
-    // }
-
-    axis_mesh.num_of_triangles = load_from_object_file(&axis_mesh, "./obj_files/axis.obj");
-    if (!axis_mesh.num_of_triangles) {
-        fprintf(stderr, "Error loading 'axis'.\n");
-        return -1;
-    }
-
-    // lego_man_mesh.num_of_triangles = load_from_object_file(&lego_man_mesh, "./obj_files/lego_man/LEGO_Man2.0.obj");
-    // if (!lego_man_mesh.num_of_triangles) {
-    //     fprintf(stderr, "Error loading 'lego man'.\n");
-    //     return -1;
-    // }
-
-    // bolt_mesh.num_of_triangles = load_from_object_file(&bolt_mesh, "./Bolt.obj");
-    // if (!bolt_mesh.num_of_triangles) {
-    //     fprintf(stderr, "Error loading 'bolt'.\n");
-    //     return -1;
-    // }
-
-    // teapot_mesh.num_of_triangles = load_from_object_file(&teapot_mesh, "./obj_files/teapot.obj");
-    // if (!teapot_mesh.num_of_triangles) {
-    //     fprintf(stderr, "Error loading 'teapot'.\n");
-    //     return -1;
-    // }
-
-    test_mesh.num_of_triangles = load_from_object_file(&test_mesh, "./obj_files/test.obj");
-    if (!test_mesh.num_of_triangles) {
-        fprintf(stderr, "Error loading 'test'.\n");
-        return -1;
-    }
-
     return 0;
 }
 
 void setup(void)
 {    
-    mesh_to_use = &axis_mesh;
-
     white_color.a = 255;
     white_color.b = 255;
     white_color.g = 255;
@@ -251,54 +181,92 @@ void setup(void)
 
     fps_place.x = 10;
     fps_place.y = 10;
-    fps_place.w = 300;
+    fps_place.w = 110;
     fps_place.h = 25;
 
-    Near = 0.2f;
-    Far = 1000.0f;
-    FoV = 90.0f;
-    Aspect_Ratio = (float)WINDOW_HEIGHT / (float)WINDOW_WIDTH;
-    
+/*-----------------------------------------------------*/
+    /*SOUTH*/
+    cube_mesh.tris[0].p[0] = Vec3_new(0,0,0);
+    cube_mesh.tris[0].p[1] = Vec3_new(0,1,0);
+    cube_mesh.tris[0].p[2] = Vec3_new(1,1,0);
+
+    cube_mesh.tris[1].p[0] = Vec3_new(0,0,0);
+    cube_mesh.tris[1].p[1] = Vec3_new(1,1,0);
+    cube_mesh.tris[1].p[2] = Vec3_new(1,0,0);
+
+    /*EAST*/
+    cube_mesh.tris[2].p[0] = Vec3_new(1,0,0);
+    cube_mesh.tris[2].p[1] = Vec3_new(1,1,0);
+    cube_mesh.tris[2].p[2] = Vec3_new(1,1,1);
+
+    cube_mesh.tris[3].p[0] = Vec3_new(1,0,0);
+    cube_mesh.tris[3].p[1] = Vec3_new(1,1,1);
+    cube_mesh.tris[3].p[2] = Vec3_new(1,0,1);
+
+    /*NORTH*/
+    cube_mesh.tris[4].p[0] = Vec3_new(1,0,1);
+    cube_mesh.tris[4].p[1] = Vec3_new(1,1,1);
+    cube_mesh.tris[4].p[2] = Vec3_new(0,1,1);
+
+    cube_mesh.tris[5].p[0] = Vec3_new(1,0,1);
+    cube_mesh.tris[5].p[1] = Vec3_new(0,1,1);
+    cube_mesh.tris[5].p[2] = Vec3_new(0,0,1);
+
+    /*WEST*/
+    cube_mesh.tris[6].p[0] = Vec3_new(0,0,1);
+    cube_mesh.tris[6].p[1] = Vec3_new(0,1,1);
+    cube_mesh.tris[6].p[2] = Vec3_new(0,1,0);
+
+    cube_mesh.tris[7].p[0] = Vec3_new(0,0,1);
+    cube_mesh.tris[7].p[1] = Vec3_new(0,1,0);
+    cube_mesh.tris[7].p[2] = Vec3_new(0,0,0);
+
+    /*TOP*/
+    cube_mesh.tris[8].p[0] = Vec3_new(0,1,0);
+    cube_mesh.tris[8].p[1] = Vec3_new(0,1,1);
+    cube_mesh.tris[8].p[2] = Vec3_new(1,1,1);
+
+    cube_mesh.tris[9].p[0] = Vec3_new(0,1,0);
+    cube_mesh.tris[9].p[1] = Vec3_new(1,1,1);
+    cube_mesh.tris[9].p[2] = Vec3_new(1,1,0);
+
+    /*BOTTOM*/
+    cube_mesh.tris[10].p[0] = Vec3_new(1,0,1);
+    cube_mesh.tris[10].p[1] = Vec3_new(0,0,1);
+    cube_mesh.tris[10].p[2] = Vec3_new(0,0,0);
+
+    cube_mesh.tris[11].p[0] = Vec3_new(1,0,1);
+    cube_mesh.tris[11].p[1] = Vec3_new(0,0,0);
+    cube_mesh.tris[11].p[2] = Vec3_new(1,0,0);
+
+    cube_mesh.num_of_triangles = 12;
+/*-----------------------------------------------------*/
+
+    // for (int i = 0; i < current_MAX_num_of_triangles; i++) {
+    //     printf("%d .", i+1); PRINT_TRIANGLE(cube_mesh.tris[i], 4);
+    // }
+
+    float Near = 0.1f;
+    float Far = 1000.0f;
+    float FoV = 90.0f;
+    float Aspect_Ratio = (float)WINDOW_HEIGHT / (float)WINDOW_WIDTH;
+    float FoV_Rad = 1.0f / tanf((FoV * 0.5f *PI)/ 180.0f);
+
     proj_mat = mat_alloc(4,4);
     rotZ_mat = mat_alloc(4,4);
-    rotY_mat = mat_alloc(4,4);
     rotX_mat = mat_alloc(4,4);
-    trans_mat = mat_alloc(4,4);
-    world_mat = mat_alloc(4,4);
-    temp = mat_alloc(4,4);
-    point_at_mat = mat_alloc(4,4);
-    invers_point_at_mat = mat_alloc(4,4);
-    camera_mat = mat_alloc(4,4);
-    view_mat = mat_alloc(4,4);
-    camera_rotation_mat = mat_alloc(4,4);
-
     mat_fill(proj_mat, 0.0f);
     mat_fill(rotZ_mat, 0.0f);
-    mat_fill(rotY_mat, 0.0f);
     mat_fill(rotX_mat, 0.0f);
-    mat_fill(trans_mat, 0.0f);
-    mat_fill(world_mat, 0.0f);
-    mat_fill(temp, 0.0f);
-    mat_fill(point_at_mat, 0.0f);
-    mat_fill(invers_point_at_mat, 0.0f);
-    mat_fill(camera_mat, 0.0f);
-    mat_fill(view_mat, 0.0f);
-    mat_fill(view_mat, 0.0f);
 
-    update_proj_mat(FoV, Aspect_Ratio, Near, Far);
+    /* Projection Matrix */
+    MAT_AT(proj_mat, 0, 0) = Aspect_Ratio * FoV_Rad;
+    MAT_AT(proj_mat, 1, 1) = FoV_Rad;
+    MAT_AT(proj_mat, 2, 2) = Far / (Far - Near);
+    MAT_AT(proj_mat, 3, 2) = (-Far * Near) / (Far - Near);
+    MAT_AT(proj_mat, 2, 3) = 1.0f;
 
-    camera_vector = Vec3_new(0, 0, 0);
-    up_vector = Vec3_new(0, 1, 0);
-    target_vector = Vec3_new(0, 0, 1);
-    camera_vector_offset_world = camera_vector_offset_camera = Vec3_new(0, 0, 0);
-
-    near_plane.point = Vec3_new(0.0f, 0.0f, Near);
-    near_plane.normal = Vec3_new(0.0f, 0.0f, 1.0f);
-
-    /*test*/
-    PRINT_TRIANGLE(test_mesh.tris[0]);
-    PRINT_TRIANGLE(test_mesh.tris[1]);
-    /*test*/
+    
 }
 
 void process_input(void)
@@ -328,52 +296,6 @@ void process_input(void)
                         break;
                     }
                 }
-                if (event.key.keysym.sym == SDLK_r) {
-                    camera_vector = Vec3_new(0, 0, 0);
-                    up_vector = Vec3_new(0, 1, 0);
-                    target_vector = Vec3_new(0, 0, 1);
-                    camera_vector_offset_world = camera_vector_offset_camera = Vec3_new(0, 0, 0);
-                    Yaw = 0;
-                }
-                if (event.key.keysym.sym == SDLK_UP) {
-                    camera_vector.y += 8.0f * delta_time;
-                    // VEC3_PRINT(camera_vector);
-                }
-                if (event.key.keysym.sym == SDLK_DOWN) {
-                    camera_vector.y -= 8.0f * delta_time;
-                    // VEC3_PRINT(camera_vector);
-                }
-                if (event.key.keysym.sym == SDLK_LEFT) {
-                    camera_vector_offset_camera.x = -8.0f * delta_time;
-                    change_camera_positoin();
-                    // VEC3_PRINT(camera_vector);
-                }
-                if (event.key.keysym.sym == SDLK_RIGHT) {
-                    camera_vector_offset_camera.x = 8.0f * delta_time;
-                    change_camera_positoin();
-                    // VEC3_PRINT(camera_vector);
-                }
-                if (event.key.keysym.sym == SDLK_a) {
-                    Yaw += 2.0f * delta_time;
-                    dprintF(Yaw);
-                    // VEC3_PRINT(camera_vector);
-                }
-                if (event.key.keysym.sym == SDLK_d) {
-                    Yaw -= 2.0f * delta_time;
-                    dprintF(Yaw);
-                    // VEC3_PRINT(camera_vector);
-                }
-                if (event.key.keysym.sym == SDLK_w) {
-                    camera_vector = Vec3_add(&camera_vector, &forward_vector);
-                }
-                if (event.key.keysym.sym == SDLK_s) {
-                    camera_vector = Vec3_sub(&camera_vector, &forward_vector);
-                }
-                if (event.key.keysym.sym == SDLK_p) {
-                    dprintI(number_of_triangles_to_render);
-                    PRINT_TRIANGLE(triangles_to_render[0]);
-                    dprintI(number_of_cliped_triangles);
-                }
                 break;
         }
     }
@@ -386,7 +308,7 @@ void update(void)
     fps = 1.0f / delta_time;
 
     char fps_count[100];
-    sprintf(fps_count, "FPS = %8.4g | number of clipped tri = %d", fps, number_of_cliped_triangles);
+    sprintf(fps_count, "FPS = %8.4g", fps);
     text_surface = TTF_RenderText_Solid(font, fps_count,white_color);
 
     text_texture = SDL_CreateTextureFromSurface(renderer,text_surface);
@@ -394,132 +316,94 @@ void update(void)
 
     /* ---------------------------------------------- */
 
-    // theta += 1.0f * delta_time;
+    theta += 1.0f * delta_time;
 
-    target_vector = Vec3_new(0, 0, 1);
-    update_rotY_mat(Yaw);
-    mat_copy(camera_rotation_mat, rotY_mat);
-    look_dir = mat4x4_dot_vec3_with_w(camera_rotation_mat, &target_vector);
-    target_vector = Vec3_add(&camera_vector, &look_dir);
-    update_point_at_mat(camera_vector, target_vector, up_vector);
-    camera_mat = point_at_mat;
-    view_mat = invers_point_at_mat;
+    /* Rotation Z Matrix */
+    MAT_AT(rotZ_mat, 0, 0) = cosf(theta);
+    MAT_AT(rotZ_mat, 0, 1) = sinf(theta);
+    MAT_AT(rotZ_mat, 1, 0) = -sinf(theta);
+    MAT_AT(rotZ_mat, 1, 1) = cosf(theta);
+    MAT_AT(rotZ_mat, 2, 2) = 1.0f;
+    MAT_AT(rotZ_mat, 3, 3) = 1.0f;
 
-    forward_vector = Vec3_mul(&look_dir, 8.0f * delta_time);
+    /* Rotation X Matrix */
+    MAT_AT(rotX_mat, 0, 0) = 1;
+    MAT_AT(rotX_mat, 1, 1) = cosf(theta*0.5);
+    MAT_AT(rotX_mat, 1, 2) = sinf(theta*0.5);
+    MAT_AT(rotX_mat, 2, 1) = -sinf(theta*0.5);
+    MAT_AT(rotX_mat, 2, 2) = cosf(theta*0.5);
+    MAT_AT(rotX_mat, 3, 3) = 1.0f;
 
-
-    
-
-
-    /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
-
-    update_rotZ_mat(theta);
-    update_rotX_mat((0*PI)/180);
-    update_rotY_mat(0);
-    update_trans_mat(0.0f, 0.0f, 10.0f);
-    // update_proj_mat(FoV, Aspect_Ratio, Near, Far);
-    
-    mat_fill(world_mat, 0.0f);
-    mat_fill(temp, 0.0f);
-    
-    mat_dot(world_mat, rotZ_mat, rotX_mat);
-    mat_dot(temp, world_mat, trans_mat);
-
-    mat_copy(world_mat, temp);
-
-    /* Create Triangles */
-    triangle projected_tri, transformed_tri, viewed_tri,tri;
+        /* Draw Triangles */
+    triangle projected_tri, translated_tri, rotatedZ_tri, rotatedZX_tri, tri;
     Vec3 normal, line1, line2, light_position;
-    Vec3 offset_view = {1,1,0,0};
     float dp;
     number_of_triangles_to_render = 0;
-    for (int i = 0; i < mesh_to_use->num_of_triangles; i++) {
+    for (int i = 0; i < simple_shape_mesh.num_of_triangles; i++) {
         
-        tri = mesh_to_use->tris[i];
+        tri = simple_shape_mesh.tris[i];
+        // tri = cube_mesh.tris[i];
         
-        transformed_tri.p[0] = mat4x4_dot_vec3_with_w(world_mat, &tri.p[0]);
-        transformed_tri.p[1] = mat4x4_dot_vec3_with_w(world_mat, &tri.p[1]);
-        transformed_tri.p[2] = mat4x4_dot_vec3_with_w(world_mat, &tri.p[2]);
+        mat4x4_dot_vec3(&rotatedZ_tri.p[0], &tri.p[0], rotZ_mat);
+        mat4x4_dot_vec3(&rotatedZ_tri.p[1], &tri.p[1], rotZ_mat);
+        mat4x4_dot_vec3(&rotatedZ_tri.p[2], &tri.p[2], rotZ_mat);
 
-        /*Calculate triangle normal */
-        line1 = Vec3_sub(&transformed_tri.p[1], &transformed_tri.p[0]);
-        line2 = Vec3_sub(&transformed_tri.p[2], &transformed_tri.p[0]);
+        mat4x4_dot_vec3(&rotatedZX_tri.p[0], &rotatedZ_tri.p[0], rotX_mat);
+        mat4x4_dot_vec3(&rotatedZX_tri.p[1], &rotatedZ_tri.p[1], rotX_mat);
+        mat4x4_dot_vec3(&rotatedZX_tri.p[2], &rotatedZ_tri.p[2], rotX_mat);
+        
+        translated_tri = rotatedZX_tri;
+        translated_tri.p[0].z = rotatedZX_tri.p[0].z + 300.0f;
+        translated_tri.p[1].z = rotatedZX_tri.p[1].z + 300.0f;
+        translated_tri.p[2].z = rotatedZX_tri.p[2].z + 300.0f;
+
+        line1.x = translated_tri.p[1].x - translated_tri.p[0].x;
+        line1.y = translated_tri.p[1].y - translated_tri.p[0].y;
+        line1.z = translated_tri.p[1].z - translated_tri.p[0].z;
+
+        line2.x = translated_tri.p[2].x - translated_tri.p[0].x;
+        line2.y = translated_tri.p[2].y - translated_tri.p[0].y;
+        line2.z = translated_tri.p[2].z - translated_tri.p[0].z;
 
         normal = Vec3_cross(&line1, &line2);
         Vec3_normalize(&normal);
 
-        if (Vec3_dot(normal, Vec3_sub(&transformed_tri.p[0], &camera_vector)) < 0.0f) {
+        if (Vec3_dot(normal, Vec3_sub(&translated_tri.p[0], &camera)) < 0.0f) {
             
             /* Illumination */
             tri_color = white_color;
-            light_position = Vec3_new(0.0f, 1.0f, -1.0f);
+            light_position = Vec3_new(0.0f, -1.0f, 0.0f);
             Vec3_normalize(&light_position);
             
             dp = Vec3_dot(normal, light_position);
-            if (dp < 0) {
-                dp = 0;
-            }
-            
             tri_color.r *= dp;
             tri_color.g *= dp;
             tri_color.b *= dp;
-
             
+            mat4x4_dot_vec3(&projected_tri.p[0], &translated_tri.p[0], proj_mat);
+            mat4x4_dot_vec3(&projected_tri.p[1], &translated_tri.p[1], proj_mat);
+            mat4x4_dot_vec3(&projected_tri.p[2], &translated_tri.p[2], proj_mat);
 
-            viewed_tri.p[0] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[0]);
-            viewed_tri.p[1] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[1]);
-            viewed_tri.p[2] = mat4x4_dot_vec3_with_w(view_mat, &transformed_tri.p[2]);
 
-            viewed_tri.my_color = tri_color;
 
-            /* Clip viewed triangle against near plane;
-            this could form two additional triangles. */
-            number_of_cliped_triangles = 0;
-            triangle clipped[2];
-            number_of_cliped_triangles = triangle_clip_against_plane(near_plane.point, near_plane.normal, &viewed_tri, &clipped[0], &clipped[1]);
+            /* Scale into view */
+            projected_tri.p[0].x += 1.0f; projected_tri.p[0].y += 1.0f;
+            projected_tri.p[1].x += 1.0f; projected_tri.p[1].y += 1.0f;
+            projected_tri.p[2].x += 1.0f; projected_tri.p[2].y += 1.0f;
 
-            // dprintI(number_of_cliped_triangles);
-
-            if (number_of_cliped_triangles == -1) {
-                fprintf(stderr, "Error clipping triangels.\n");
-                return;
+            for (int j = 0; j < 3; j++) {
+                projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
+                projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
             }
+            projected_tri.mid_z = (projected_tri.p[0].z + projected_tri.p[1].z + projected_tri.p[2].z) / 3.0f;
+            projected_tri.my_color = tri_color;
+            triangles_to_render[number_of_triangles_to_render] = projected_tri;
+            number_of_triangles_to_render++;
+            // triangle_fill(renderer, projected_tri, tri_color);
+            // SDL_DrawTriangle(renderer, projected_tri, white_color);
 
-            /*test*/
-            // PRINT_TRIANGLE(clipped[0]);
-            // PRINT_TRIANGLE(clipped[1]);
-
-            /*test*/
-            for (int n = 0; n < number_of_cliped_triangles; n++) {
-
-                projected_tri.p[0] = mat4x4_dot_vec3_with_w(proj_mat, &clipped[n].p[0]);
-                projected_tri.p[1] = mat4x4_dot_vec3_with_w(proj_mat, &clipped[n].p[1]);
-                projected_tri.p[2] = mat4x4_dot_vec3_with_w(proj_mat, &clipped[n].p[2]);
-                
-                projected_tri.p[0] = Vec3_div(&projected_tri.p[0], projected_tri.p[0].w);
-                projected_tri.p[1] = Vec3_div(&projected_tri.p[1], projected_tri.p[1].w);
-                projected_tri.p[2] = Vec3_div(&projected_tri.p[2], projected_tri.p[2].w);
-
-                /* Scale into view */
-                projected_tri.p[0] = Vec3_add(&projected_tri.p[0], &offset_view); 
-                projected_tri.p[1] = Vec3_add(&projected_tri.p[1], &offset_view); 
-                projected_tri.p[2] = Vec3_add(&projected_tri.p[2], &offset_view); 
-
-                for (int j = 0; j < 3; j++) {
-                    projected_tri.p[j].x *= 0.5f * (float)WINDOW_WIDTH;
-                    projected_tri.p[j].y *= 0.5f * (float)WINDOW_HEIGHT;
-                }
-                projected_tri.mid_z = (projected_tri.p[0].z + projected_tri.p[1].z + projected_tri.p[2].z) / 3.0f;
-                projected_tri.my_color = clipped[n].my_color;
-                // dprintF(projected_tri.mid_z);
-                // projected_tri.my_color = tri_color;
-                triangles_to_render[number_of_triangles_to_render] = projected_tri;
-                number_of_triangles_to_render++;
-            }
         }
     } 
-
-    /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 
 }
 
@@ -528,12 +412,10 @@ void render(void)
     SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
     SDL_RenderClear(renderer);
 /* -------------------------------------------------------------------------------------------------- */
-    // qsort_tri(triangles_to_render, 0, number_of_triangles_to_render - 1);
-    insertion_sort_tri(triangles_to_render, number_of_triangles_to_render);
-    
+    qsort_tri(triangles_to_render, 0, number_of_triangles_to_render);
     // dprintINT(number_of_triangles_to_render);
     for (int i = 0; i < number_of_triangles_to_render; i++) {
-        triangle_fill(renderer, triangles_to_render[i], triangles_to_render[i].my_color);
+        triangle_fill(renderer, triangles_to_render[i], white_color);
         SDL_DrawTriangle(renderer, triangles_to_render[i], black_color);
 
     }
@@ -557,7 +439,7 @@ void fix_framerate(void)
     int time_to_wait = FRAME_TARGET_TIME - time_ellapsed;
     
     if (time_to_wait > 0 && time_to_wait < FRAME_TARGET_TIME) {
-        SDL_Delay(time_to_wait);
+        // SDL_Delay(time_to_wait);
     }
     delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0f;
     previous_frame_time = SDL_GetTicks();
@@ -567,8 +449,8 @@ void print_triangle(triangle t, int padding, char *name)
 {
     printf("%s\n", name);
     printf("%*s", padding,""); VEC3_PRINT(t.p[0]);
-    printf("%*s", padding,""); VEC3_PRINT(t.p[1]);
-    printf("%*s", padding,""); VEC3_PRINT(t.p[2]);
+    printf("%*s", padding,"");VEC3_PRINT(t.p[1]);
+    printf("%*s", padding,"");VEC3_PRINT(t.p[2]);
 }
 
 void mat4x4_dot_vec3(Vec3 *out, Vec3 *in, Mat m)
@@ -585,45 +467,13 @@ void mat4x4_dot_vec3(Vec3 *out, Vec3 *in, Mat m)
     }
 }
 
-void mat4x4_mult_vec3(Vec3 *out, Vec3 *in, Mat m)
-{
-    out->x = (in->x * MAT_AT(m, 0, 0)) + (in->y * MAT_AT(m, 1, 0)) + (in->z * MAT_AT(m, 2, 0)) + MAT_AT(m, 3, 0); 
-    out->y = (in->x * MAT_AT(m, 0, 1)) + (in->y * MAT_AT(m, 1, 1)) + (in->z * MAT_AT(m, 2, 1)) + MAT_AT(m, 3, 1); 
-    out->z = (in->x * MAT_AT(m, 0, 2)) + (in->y * MAT_AT(m, 1, 2)) + (in->z * MAT_AT(m, 2, 2)) + MAT_AT(m, 3, 2);
-    float w = in->x * MAT_AT(m, 0, 3) + in->y * MAT_AT(m, 1, 3) + in->z * MAT_AT(m, 2, 3) + MAT_AT(m, 3, 3);
-
-    if (w) {
-        out->x /= w; 
-        out->y /= w;
-        out->z /= w;
-    }
-}
-
-Vec3 mat4x4_dot_vec3_with_w(Mat m, Vec3 *in)
-{
-    Vec3 v = {
-        v.x = (in->x * MAT_AT(m, 0, 0)) + (in->y * MAT_AT(m, 1, 0)) + (in->z * MAT_AT(m, 2, 0)) + (in->w * MAT_AT(m, 3, 0)), 
-        v.y = (in->x * MAT_AT(m, 0, 1)) + (in->y * MAT_AT(m, 1, 1)) + (in->z * MAT_AT(m, 2, 1)) + (in->w * MAT_AT(m, 3, 1)), 
-        v.z = (in->x * MAT_AT(m, 0, 2)) + (in->y * MAT_AT(m, 1, 2)) + (in->z * MAT_AT(m, 2, 2)) + (in->w * MAT_AT(m, 3, 2)),
-        v.w = (in->x * MAT_AT(m, 0, 3)) + (in->y * MAT_AT(m, 1, 3)) + (in->z * MAT_AT(m, 2, 3)) + (in->w * MAT_AT(m, 3, 3)),
-    };
-    return v;
-}
-
 void SDL_DrawTriangle(SDL_Renderer *current_renderer, triangle t, SDL_Color color)
 {
     SDL_SetRenderDrawColor(current_renderer, color.r, color.g, color.b, color.a);
 
-    if (to_flip_y) {
-        SDL_RenderDrawLineF(renderer, t.p[0].x, WINDOW_HEIGHT - t.p[0].y, t.p[1].x, WINDOW_HEIGHT - t.p[1].y);
-        SDL_RenderDrawLineF(renderer, t.p[1].x, WINDOW_HEIGHT - t.p[1].y, t.p[2].x, WINDOW_HEIGHT - t.p[2].y);
-        SDL_RenderDrawLineF(renderer, t.p[2].x, WINDOW_HEIGHT - t.p[2].y, t.p[0].x, WINDOW_HEIGHT - t.p[0].y);
-    } else {
-        SDL_RenderDrawLineF(renderer, t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y);
-        SDL_RenderDrawLineF(renderer, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
-        SDL_RenderDrawLineF(renderer, t.p[2].x, t.p[2].y, t.p[0].x, t.p[0].y);
-
-    }
+    SDL_RenderDrawLineF(renderer, t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y);
+    SDL_RenderDrawLineF(renderer, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
+    SDL_RenderDrawLineF(renderer, t.p[2].x, t.p[2].y, t.p[0].x, t.p[0].y);
 }
 
 float edge_cross(Vec2 *a, Vec2 *b, Vec2 *p)
@@ -699,12 +549,7 @@ void triangle_fill(SDL_Renderer *renderer, triangle t, SDL_Color color)
 
                 // draw_pixel(x, y, color);
                 SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-                
-                if (to_flip_y) {
-                    SDL_RenderDrawPoint(renderer, x, WINDOW_HEIGHT - y);
-                } else {
-                    SDL_RenderDrawPoint(renderer, x, y);
-                }               
+                SDL_RenderDrawPoint(renderer, x, y);
             }
             w0 += delta_w0_col;
             w1 += delta_w1_col;
@@ -741,253 +586,4 @@ void swap(triangle v[], int i, int j)
     temp = v[i];
     v[i] = v[j];
     v[j] = temp;
-}
-
-void insertion_sort_tri(triangle A[], int size)
-{
-    triangle value;
-    int hole;
-
-    for (int i = 0; i < size; i++) {
-        value = A[i];
-        hole = i;
-        while (hole > 0 && A[hole-1].mid_z < value.mid_z) {
-            A[hole] = A[hole - 1];
-            hole--;
-        }
-        A[hole] = value;
-    }
-}
-
-void update_rotX_mat(float Angle_rad)
-{
-    /* Rotation X Matrix */
-    MAT_AT(rotX_mat, 0, 0) = 1.0f;
-    MAT_AT(rotX_mat, 1, 1) = cosf(Angle_rad);
-    MAT_AT(rotX_mat, 1, 2) = sinf(Angle_rad);
-    MAT_AT(rotX_mat, 2, 1) = -sinf(Angle_rad);
-    MAT_AT(rotX_mat, 2, 2) = cosf(Angle_rad);
-    MAT_AT(rotX_mat, 3, 3) = 1.0f;
-}
-
-void update_rotY_mat(float Angle_rad)
-{
-    /* Rotation Y Matrix */
-    MAT_AT(rotY_mat, 0, 0) = cosf(Angle_rad);
-    MAT_AT(rotY_mat, 0, 2) = sinf(Angle_rad);
-    MAT_AT(rotY_mat, 2, 0) = -sinf(Angle_rad);
-    MAT_AT(rotY_mat, 1, 1) = 1.0f;
-    MAT_AT(rotY_mat, 2, 2) = cosf(Angle_rad);
-    MAT_AT(rotY_mat, 3, 3) = 1.0f;
-}
-
-void update_rotZ_mat(float Angle_rad)
-{
-    /* Rotation Z Matrix */
-    MAT_AT(rotZ_mat, 0, 0) = cosf(Angle_rad);
-    MAT_AT(rotZ_mat, 0, 1) = sinf(Angle_rad);
-    MAT_AT(rotZ_mat, 1, 0) = -sinf(Angle_rad);
-    MAT_AT(rotZ_mat, 1, 1) = cosf(Angle_rad);
-    MAT_AT(rotZ_mat, 2, 2) = 1.0f;
-    MAT_AT(rotZ_mat, 3, 3) = 1.0f;
-}
-
-void update_trans_mat(float x, float y, float z)
-{
-    MAT_AT(trans_mat, 0, 0) = 1.0f;
-    MAT_AT(trans_mat, 1, 1) = 1.0f;
-    MAT_AT(trans_mat, 2, 2) = 1.0f;
-    MAT_AT(trans_mat, 3, 3) = 1.0f;
-    MAT_AT(trans_mat, 3, 0) = x;
-    MAT_AT(trans_mat, 3, 1) = y;
-    MAT_AT(trans_mat, 3, 2) = z;
-}
-
-void update_proj_mat(float fov_deg, float aspect_ratio, float near, float far)
-{
-    float fov_rad = 1.0f / tanf((fov_deg * 0.5f *PI)/ 180.0f);
-    MAT_AT(proj_mat, 0, 0) = aspect_ratio * fov_rad;
-    MAT_AT(proj_mat, 1, 1) = fov_rad;
-    MAT_AT(proj_mat, 2, 2) = far / (far - near);
-    MAT_AT(proj_mat, 3, 2) = (-far * near)/(far - near);
-    MAT_AT(proj_mat, 2, 3) = 1.0f;
-    MAT_AT(proj_mat, 3, 3) = 0.0f;
-}
-
-void update_point_at_mat(Vec3 pos, Vec3 target, Vec3 up)
-{
-    /* Calculate new forward direction */
-    Vec3 new_forward = Vec3_sub(&target, &pos);
-    Vec3_normalize(&new_forward);
-
-    /* Calculate new up direction */
-    Vec3 a = Vec3_mul(&new_forward, Vec3_dot(up, new_forward));
-    Vec3 new_up = Vec3_sub(&up, &a);
-    Vec3_normalize(&new_up);
-
-    /* Calculate new right direction */
-    Vec3 new_right = Vec3_cross(&new_up, &new_forward);
-
-    /* Construct dimensioning and translation matrix */
-    MAT_AT(point_at_mat, 0, 0) = new_right.x;   MAT_AT(point_at_mat, 0, 1) = new_right.y;   MAT_AT(point_at_mat, 0, 2) = new_right.z;
-    MAT_AT(point_at_mat, 1, 0) = new_up.x;      MAT_AT(point_at_mat, 1, 1) = new_up.y;      MAT_AT(point_at_mat, 1, 2) = new_up.z;
-    MAT_AT(point_at_mat, 2, 0) = new_forward.x; MAT_AT(point_at_mat, 2, 1) = new_forward.y; MAT_AT(point_at_mat, 2, 2) = new_forward.z;
-    MAT_AT(point_at_mat, 3, 0) = pos.x;         MAT_AT(point_at_mat, 3, 1) = pos.y;         MAT_AT(point_at_mat, 3, 2) = pos.z;         MAT_AT(point_at_mat, 3, 3) = 1.0f;
-
-    /* Construct the invers of dimensioning and translation matrix */
-    MAT_AT(invers_point_at_mat, 0, 0) = MAT_AT(point_at_mat, 0, 0);     MAT_AT(invers_point_at_mat, 0, 1) = MAT_AT(point_at_mat, 1, 0);     MAT_AT(invers_point_at_mat, 0, 2) = MAT_AT(point_at_mat, 2, 0);
-    MAT_AT(invers_point_at_mat, 1, 0) = MAT_AT(point_at_mat, 0, 1);     MAT_AT(invers_point_at_mat, 1, 1) = MAT_AT(point_at_mat, 1, 1);     MAT_AT(invers_point_at_mat, 1, 2) = MAT_AT(point_at_mat, 2, 1);
-    MAT_AT(invers_point_at_mat, 2, 0) = MAT_AT(point_at_mat, 0, 2);     MAT_AT(invers_point_at_mat, 2, 1) = MAT_AT(point_at_mat, 1, 2);     MAT_AT(invers_point_at_mat, 2, 2) = MAT_AT(point_at_mat, 2, 2);
-    MAT_AT(invers_point_at_mat, 3, 0) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 0) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 0) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 0));  
-    MAT_AT(invers_point_at_mat, 3, 1) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 1) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 1) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 1));  
-    MAT_AT(invers_point_at_mat, 3, 2) = -(MAT_AT(point_at_mat, 3, 0)*MAT_AT(invers_point_at_mat, 0, 2) + MAT_AT(point_at_mat, 3, 1)*MAT_AT(invers_point_at_mat, 1, 2) + MAT_AT(point_at_mat, 3, 2)*MAT_AT(invers_point_at_mat, 2, 2));    
-    MAT_AT(invers_point_at_mat, 3, 3) = 1.0f;
-}
-
-void change_camera_positoin(void)
-{
-    // look_dir_XZ_porj = Vec3_new(look_dir.x, 0.0f, look_dir.z);
-    // current_look_dir_theta = atan2f(look_dir_XZ_porj.z, look_dir_XZ_porj.x);
-    // camera_vector_offset_world = Vec3_new(camera_vector_offset_camera.x * sinf((current_look_dir_theta)), 0, -camera_vector_offset_camera.x * cosf(current_look_dir_theta));
-    camera_vector_offset_world = camera_vector_offset_camera;
-    camera_vector = Vec3_add(&camera_vector, &camera_vector_offset_world);
-    
-}
-
-Vec3 vector_intersect_plane(Vec3 plane_p, Vec3 plane_n, Vec3 line_start, Vec3 line_end)
-{
-    float plane_d, ad, bd, t;
-    Vec3 line_start_to_end, line_to_intersect;
-    
-    Vec3_normalize(&plane_n);
-    plane_d = -Vec3_dot(plane_n, plane_p);
-    ad = Vec3_dot(line_start, plane_n);
-    bd = Vec3_dot(line_end, plane_n);
-    t = (-plane_d - ad) / (bd - ad);
-    line_start_to_end = Vec3_sub(&line_end, &line_start);
-    line_to_intersect = Vec3_mul(&line_start_to_end, t);
-
-    return Vec3_add(&line_start, &line_to_intersect);
-}
-
-/* triangle_clip_against_plane: returns numbers of triangles */
-int triangle_clip_against_plane(Vec3 plane_p, Vec3 plane_n, triangle *in_tri, triangle *out_tri1, triangle *out_tri2)
-{
-    /* create two temporarty storage arrays to classify points either side of plane;
-    if distance sign is positive, point lies on "inside" of the plane */
-    Vec3 inside_points[3]; int number_of_inside_points = 0;
-    Vec3 outside_points[3]; int number_of_outside_points = 0;
-
-    Vec3_normalize(&plane_n);
-
-    /* get signed distance of each point in triangle to plane */
-    float d0 = dist_plane_point(plane_p, plane_n, in_tri->p[0]);
-    float d1 = dist_plane_point(plane_p, plane_n, in_tri->p[1]);
-    float d2 = dist_plane_point(plane_p, plane_n, in_tri->p[2]);
-
-    if (d0 >= 0) {
-        inside_points[number_of_inside_points++] = in_tri->p[0];
-    } else {
-        outside_points[number_of_outside_points++] = in_tri->p[0];
-    }
-    if (d1 >= 0) {
-        inside_points[number_of_inside_points++] = in_tri->p[1];
-    } else {
-        outside_points[number_of_outside_points++] = in_tri->p[1];
-    }
-    if (d2 >= 0) {
-        inside_points[number_of_inside_points++] = in_tri->p[2];
-    } else {
-        outside_points[number_of_outside_points++] = in_tri->p[2];
-    }
-    
-    /* now classify triangle points, and break the input tirangle into
-    smaller output triangles if required;
-    there are four possible outcomes*/
-
-    if (number_of_inside_points == 0) {
-        return 0;
-    }
-    
-    if (number_of_inside_points == 1 && number_of_outside_points == 2) {
-        // out_tri1->mid_z = in_tri.mid_z;
-        (out_tri1->my_color) = in_tri->my_color;
-
-        // if (Yaw > 0) {
-        //     out_tri1->p[0] = inside_points[0];
-        //     out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
-        // } else {
-        //     out_tri1->p[0] = inside_points[0];
-        //     out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
-        // }
-
-        out_tri1->p[0] = inside_points[0];
-            out_tri1->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-            out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[1]);
-
-        // PRINT_TRIANGLE(*out_tri1);
-        // printf("option 1\n");
-        return 1;
-    }
-
-    if (number_of_inside_points == 2 && number_of_outside_points == 1) {
-        // out_tri1->mid_z = in_tri->mid_z;
-        out_tri1->my_color = in_tri->my_color;
-        // out_tri2->mid_z = in_tri->mid_z;
-        // out_tri2->my_color = black_color;
-        out_tri2->my_color = in_tri->my_color;
-        
-        // dprintF(in_tri.mid_z);
-        // dprintF(out_tri1->mid_z);
-        // dprintF(out_tri2->mid_z);
-
-        // if (Yaw > 0) {
-        //     out_tri1->p[2] = inside_points[0];
-        //     out_tri1->p[1] = inside_points[1];
-        //     out_tri1->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        // } else {
-        //     out_tri1->p[0] = inside_points[0];
-        //     out_tri1->p[1] = inside_points[1];
-        //     out_tri1->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        // }
-
-        out_tri1->p[2] = inside_points[0];
-            out_tri1->p[1] = inside_points[1];
-            out_tri1->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        
-        // if (Yaw > 0) {
-        //     out_tri2->p[0] = inside_points[1];
-        //     out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri2->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
-        // } else {
-        //     out_tri2->p[2] = inside_points[1];
-        //     out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-        //     out_tri2->p[0] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
-        // }
-
-        out_tri2->p[0] = inside_points[1];
-            out_tri2->p[1] = vector_intersect_plane(plane_p, plane_n, inside_points[0], outside_points[0]);
-            out_tri2->p[2] = vector_intersect_plane(plane_p, plane_n, inside_points[1] , outside_points[0]);
-        // printf("option 2\n");
-        return 2;
-    }
-
-    if (number_of_inside_points == 3) {
-        out_tri1 = in_tri;
-        // printf("option 3\n");
-        return 1;
-    }
-
-    return -1;
-
-}
-
-/* dist_plane_point: return signed shortest distance from point to plane*/
-float dist_plane_point(Vec3 plane_p, Vec3 plane_n, Vec3 point)
-{
-    Vec3_normalize(&plane_n);
-    
-    return (plane_n.x*point.x + plane_n.y*point.y + plane_n.z*point.z - Vec3_dot(plane_n, plane_p));
 }
