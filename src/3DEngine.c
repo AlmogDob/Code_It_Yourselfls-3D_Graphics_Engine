@@ -156,7 +156,7 @@ int initialize_window(void)
         return -1;
     }
 
-    simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./simple_shape/simple_shape.obj");
+    simple_shape_mesh.num_of_triangles = load_from_object_file(&simple_shape_mesh, "./obj_files/simple_shape/simple_shape.obj");
     if (!simple_shape_mesh.num_of_triangles) {
         fprintf(stderr, "Error loading 'simple shape'.\n");
         return -1;
@@ -412,7 +412,7 @@ void render(void)
     SDL_SetRenderDrawColor(renderer, 0x1E, 0x1E, 0x1E, 255);
     SDL_RenderClear(renderer);
 /* -------------------------------------------------------------------------------------------------- */
-    qsort_tri(triangles_to_render, 0, number_of_triangles_to_render);
+    qsort_tri(triangles_to_render, 0, number_of_triangles_to_render - 1);
     // dprintINT(number_of_triangles_to_render);
     for (int i = 0; i < number_of_triangles_to_render; i++) {
         triangle_fill(renderer, triangles_to_render[i], white_color);
