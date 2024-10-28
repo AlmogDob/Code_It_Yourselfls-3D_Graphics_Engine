@@ -2,14 +2,14 @@ CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
 
 main: build run clean
 	@echo main done
-build: main.c
-	gcc ./main.c $(CFLAGS) -o main 
+build: ./src/main.c
+	gcc ./src/main.c $(CFLAGS) -o ./src/main 
 
 run:
-	./main
+	./src/main
 
 clean:
-	rm main
+	rm ./src/main
 
 test:
 	gcc -o test $(CFLAGS) ./test.c 

@@ -1,15 +1,15 @@
 #define SETUP
 #define UPDATE
 #define RENDER
-#include "display.c"
+#include "./../include/display.c"
 #define MATRIX_IMPLEMENTATION
-#include "Matrix.h"
+#include "./../include/Matrix.h"
 #define VEC2_IMPLEMENTATION
-#include "Vec2.h"
+#include "./../include/Vec2.h"
 #define VEC3_IMPLEMENTATION
-#include "Vec3.h"
+#include "./../include/Vec3.h"
 #define RENDER_SHAPES_SDL_IMPLEMENTATION
-#include "render_shapes_SDL.h"
+#include "./../include/render_shapes_SDL.h"
 
 void setup(void)
 {
