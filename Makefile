@@ -1,25 +1,21 @@
 CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
+CCHECKS = -fsanitize=address
 
-main: build run clean
-	@echo main done
-build: ./src/main.c
-	gcc ./src/main.c $(CFLAGS) -o ./src/main 
+main: build_main run_main clean_main  
+	@echo ./build/main done
 
-run:
-	./src/main
+build_main: ./src/main.c
+	gcc ./src/main.c $(CFLAGS) -o ./build/main
 
-clean:
-	rm ./src/main
+run_main:
+	./build/main
+	@echo
 
-test:
-	gcc -o test $(CFLAGS) ./test.c 
-	./test
-	rm test
+clean_main:
+	@echo
+	rm ./build/main
 
-dbug: dbug_build dbug_run clean
+debug_build_main: ./src/main.c
+	@gcc ./src/main.c $(CFLAGS) -g -o ./build/main
+# valgrind -s --leak-check=full ./main
 
-dbug_build: main.c
-	gcc -o main $(CFLAGS) -g ./main.c 
-
-dbug_run:
-	gdb ./main 
