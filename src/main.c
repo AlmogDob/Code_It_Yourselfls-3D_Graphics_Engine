@@ -1,48 +1,36 @@
+/* This code is heavily inspired by the 3D engine of 'OneLoneCoder' in C++.
+you can find the source code in:
+https://github.com/OneLoneCoder/Javidx9/tree/master/ConsoleGameEngine/BiggerProjects/Engine3D .
+featured in this video of his:
+https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */ 
+
 #define SETUP
 #define UPDATE
 #define RENDER
 #include "./../include/display.c"
 #define MATRIX2D_IMPLEMENTATION
 #include "./../include/Matrix2D.h"
-#define VEC2_IMPLEMENTATION
-#include "./../include/Vec2.h"
-#define VEC3_IMPLEMENTATION
-#include "./../include/Vec3.h"
-#define RENDER_SHAPES_SDL_IMPLEMENTATION
-#include "./../include/render_shapes_SDL.h"
+#define RENDER_SHAPES_IMPLEMENTATION
+#include "./../include/render_shapes.h"
 
 void setup(game_state_t *game_state)
 {
-    // game_state->to_limit_fps = 0;
-    game_state->const_fps = 75;
-
-    game_state->window_surface = SDL_GetWindowSurface(game_state->window);
-
-    game_state->window_pixels_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
-
+    game_state->to_limit_fps = 0;
 
 }
 
 void update(game_state_t *game_state)
 {
-    // for (size_t j = 0; j < game_state->window_pixels_mat.cols; j++) {
-    //     float t = (float)j/(game_state->window_pixels_mat.cols-1);
-    //     for (size_t i = 0; i < game_state->window_pixels_mat.rows; i++) {
-    //         float n = (float)i/(game_state->window_pixels_mat.rows-1);
-    //         float m = (float)(i + j) / (game_state->window_pixels_mat.rows + game_state->window_pixels_mat.cols - 2);
-    //         uint32_t color = RGB_hexRGB((int)(255*t), (int)(255*(game_state->elapsed_time/5)*(1-m)), (int)(255*(n)));
-
-    //         // float n = (float)i/(game_state->window_pixels_mat.rows-1);
-    //         // uint32_t color = RGB_hexRGB((int)(255*(1-n)), (int)(255*(t)), 0);
-
-    //         MAT2D_AT(game_state->window_pixels_mat, i, j) = color;
-    //     }
-    // }
 }
 
 void render(game_state_t *game_state)
 {
-    copy_mat_to_surface_RGB(game_state);
-    SDL_UpdateWindowSurface(game_state->window);
+    float r = 100;
+    Mat2D center = mat2D_alloc(2, 1);
+    srand(time(0));
+    mat2D_rand(center, 0, fmin(game_state->window_h, game_state->window_w));
+
+    rs_fill_circle(game_state->window_pixels_mat, center, r, 0xFFFFFFFF);
+
 }
 
