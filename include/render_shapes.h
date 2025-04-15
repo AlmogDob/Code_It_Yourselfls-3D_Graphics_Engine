@@ -20,7 +20,12 @@ void rs_draw_circle(Mat2D screen_mat, Mat2D center, float r, uint32_t color)
         for (int dx = -r; dx <= r; dx ++) {
             float diff = dx * dx + dy * dy - r * r;
             if (diff < 0 && diff > -r*2) {
-                MAT2D_AT(screen_mat, MAT2D_AT(center, 0, 0) + dx, MAT2D_AT(center, 1, 0) + dy) = color;
+                float x = MAT2D_AT(center, 0, 0) + dx;
+                float y = MAT2D_AT(center, 1, 0) + dy;
+                if (x >= screen_mat.cols || y >= screen_mat.rows || x < 0 || y < 0) {
+                    continue;
+                }
+                MAT2D_AT(screen_mat, y, x) = color;
             }
         }
     }
@@ -35,7 +40,12 @@ void rs_fill_circle(Mat2D screen_mat, Mat2D center, float r, uint32_t color)
         for (int dx = -r; dx <= r; dx ++) {
             float diff = dx * dx + dy * dy - r * r;
             if (diff < 0) {
-                MAT2D_AT(screen_mat, MAT2D_AT(center, 0, 0) + dx, MAT2D_AT(center, 1, 0) + dy) = color;
+                float x = MAT2D_AT(center, 0, 0) + dx;
+                float y = MAT2D_AT(center, 1, 0) + dy;
+                if (x >= screen_mat.cols || y >= screen_mat.rows || x < 0 || y < 0) {
+                    continue;
+                }
+                MAT2D_AT(screen_mat, y, x) = color;
             }
         }
     }
