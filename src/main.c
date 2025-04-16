@@ -19,11 +19,6 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 
 #define PI M_PI
 
-void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t color)
-{
-
-}
-
 void setup(game_state_t *game_state)
 {
     game_state->to_limit_fps = 0;
