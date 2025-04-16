@@ -20,6 +20,7 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 #define PI M_PI
 
 Mesh cube;
+Mesh proj_cube;
 
 void setup(game_state_t *game_state)
 {
@@ -44,7 +45,6 @@ void update(game_state_t *game_state)
 
 void render(game_state_t *game_state)
 {
-    ars_draw_tri(game_state->window_pixels_mat, cube.elements[0], 0xFFFFFF);
-
+    ars_draw_mesh(game_state->window_pixels_mat, cube, 0xFFFFFF);
 }
 

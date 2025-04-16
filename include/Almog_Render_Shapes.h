@@ -11,6 +11,7 @@ void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t co
 void ars_draw_circle(Mat2D screen_mat, float center_x, float center_y, float r, uint32_t color);
 void ars_fill_circle(Mat2D screen_mat, float center_x, float center_y, float r, uint32_t color);
 void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color);
+void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color);
 
 #endif /*ALMOG_RENDER_SHAPES_H_*/
 
@@ -37,16 +38,27 @@ void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t co
     dx = x2 - x1;
     dy = y2 - y1;
 
+    if (0 == dx && 0 == dy) return;
     if (0 == dx) {
         while (x != x2 || y != y2) {
-            y++;
+            if (dy > 0) {
+                y++;
+            }
+            if (dy < 0) {
+                y--;
+            }
             ars_draw_point(screen_mat, x, y, color);
         }
         return;
     }
     if (0 == dy) {
         while (x != x2 || y != y2) {
-            x++;
+            if (dx > 0) {
+                x++;
+            }
+            if (dx < 0) {
+                x--;
+            }
             ars_draw_point(screen_mat, x, y, color);
         }
         return;
@@ -104,6 +116,13 @@ void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color)
     ars_draw_line(screen_mat, tri.points[0].x, tri.points[0].y, tri.points[1].x, tri.points[1].y, color);
     ars_draw_line(screen_mat, tri.points[1].x, tri.points[1].y, tri.points[2].x, tri.points[2].y, color);
     ars_draw_line(screen_mat, tri.points[2].x, tri.points[2].y, tri.points[0].x, tri.points[0].y, color);
+}
+
+void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color)
+{
+    for (size_t i = 0; i < mesh.length; i++) {
+        ars_draw_tri(screen_mat, mesh.elements[i], color);
+    }
 }
 
 #endif /*ALMOG_RENDER_SHAPES_IMPLEMENTATION*/
