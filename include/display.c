@@ -59,15 +59,9 @@ typedef struct {
     int window_h;
     SDL_Renderer *renderer;
     TTF_Font *font;
-    SDL_Surface *text_surface;
-    SDL_Texture *text_texture;
 
     SDL_Surface *window_surface;
     SDL_Texture *window_texture;
-
-    SDL_Rect fps_place;
-    SDL_Color white_color;
-    SDL_Color fps_color;
 
     Mat2D window_pixels_mat;
 } game_state_t;
@@ -116,8 +110,6 @@ int main()
     game_state.window_h = WINDOW_HEIGHT;
     game_state.renderer = NULL;
     game_state.font = NULL;
-    game_state.text_surface = NULL;
-    game_state.text_texture = NULL;
 
     game_state.game_is_running = !initialize_window(&game_state);
 
@@ -181,17 +173,6 @@ int initialize_window(game_state_t *game_state)
 
 void setup_window(game_state_t *game_state)
 {
-    game_state->white_color.a = 255;
-    game_state->white_color.b = 255;
-    game_state->white_color.g = 255;
-    game_state->white_color.r = 255;
-
-    game_state->fps_color = game_state->white_color;
-
-    game_state->fps_place.x = 10;
-    game_state->fps_place.y = 10;
-    game_state->fps_place.w = 135;
-    game_state->fps_place.h = 25;
 
     game_state->window_surface = SDL_GetWindowSurface(game_state->window);
 
@@ -299,9 +280,6 @@ void destroy_window(game_state_t *game_state)
     if (!game_state->window_surface) SDL_FreeSurface(game_state->window_surface);
     if (!game_state->window_texture) SDL_DestroyTexture(game_state->window_texture);
 
-    if (!game_state->text_texture) SDL_DestroyTexture(game_state->text_texture);
-    if (!game_state->text_surface) SDL_FreeSurface(game_state->text_surface);
-    
     SDL_DestroyRenderer(game_state->renderer);
     SDL_DestroyWindow(game_state->window);
 
