@@ -4,11 +4,15 @@
 #include <math.h>
 #include <stdint.h>
 #include "Matrix2D.h"
+#include "Almog_Engine.h"
 
 void ars_draw_point(Mat2D screen_mat, int x, int y, uint32_t color);
 void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t color);
 void ars_draw_circle(Mat2D screen_mat, float center_x, float center_y, float r, uint32_t color);
 void ars_fill_circle(Mat2D screen_mat, float center_x, float center_y, float r, uint32_t color);
+void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color);
+
+#endif /*ALMOG_RENDER_SHAPES_H_*/
 
 #ifdef ALMOG_RENDER_SHAPES_IMPLEMENTATION
 #undef ALMOG_RENDER_SHAPES_IMPLEMENTATION
@@ -95,6 +99,11 @@ void ars_fill_circle(Mat2D screen_mat, float center_x, float center_y, float r, 
     }
 }
 
-#endif /*ALMOG_RENDER_SHAPES_IMPLEMENTATION*/
+void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color)
+{
+    ars_draw_line(screen_mat, tri.points[0].x, tri.points[0].y, tri.points[1].x, tri.points[1].y, color);
+    ars_draw_line(screen_mat, tri.points[1].x, tri.points[1].y, tri.points[2].x, tri.points[2].y, color);
+    ars_draw_line(screen_mat, tri.points[2].x, tri.points[2].y, tri.points[0].x, tri.points[0].y, color);
+}
 
-#endif /*ALMOG_RENDER_SHAPES_H_*/
+#endif /*ALMOG_RENDER_SHAPES_IMPLEMENTATION*/

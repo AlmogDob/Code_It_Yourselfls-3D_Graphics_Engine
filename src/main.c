@@ -19,12 +19,13 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 
 #define PI M_PI
 
+Mesh cube;
+
 void setup(game_state_t *game_state)
 {
     game_state->to_limit_fps = 0;
 
-    Mesh cube = ae_create_cube(1);
-    (void)cube;
+    cube = ae_create_cube(100);
 
     Mat2D proj_mat = mat2D_alloc(4, 4);
     float z_near  = 0.1;
@@ -43,12 +44,7 @@ void update(game_state_t *game_state)
 
 void render(game_state_t *game_state)
 {
-    float r = 100;
-    Mat2D center = mat2D_alloc(2, 1);
-    srand(time(0));
-    mat2D_rand(center, 0, fmin(game_state->window_h, game_state->window_w));
-
-    ars_fill_circle(game_state->window_pixels_mat, MAT2D_AT(center, 0, 0), MAT2D_AT(center, 1, 0), r, 0xFFFFFFFF);
+    ars_draw_tri(game_state->window_pixels_mat, cube.elements[0], 0xFFFFFF);
 
 }
 

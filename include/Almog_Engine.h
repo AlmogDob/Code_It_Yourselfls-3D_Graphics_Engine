@@ -35,6 +35,8 @@ Mesh ae_create_cube(const size_t len);
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
 
+#endif /* ALMOG_ENGINE_H_ */
+
 #ifdef ALMOG_ENGINE_IMPLEMENTATION
 #undef ALMOG_ENGINE_IMPLEMENTATION
 
@@ -285,5 +287,3 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
 
 
 #endif /* ALMOG_ENGINE_IMPLEMENTATION */
-
-#endif /* ALMOG_ENGINE_H_ */
