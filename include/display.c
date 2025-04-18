@@ -46,13 +46,20 @@ typedef struct {
     float const_fps;
     float fps;
     float frame_target_time;
-    int space_bar_was_pressed;
     int to_render;
     int to_update;
     size_t previous_frame_time;
     int left_button_pressed;
     int to_limit_fps;
     int to_clear_renderer;
+
+    int space_bar_was_pressed;
+    int w_was_pressed;
+    int s_was_pressed;
+    int a_was_pressed;
+    int d_was_pressed;
+    int e_was_pressed;
+    int q_was_pressed;
 
     SDL_Window *window;
     int window_w;
@@ -98,7 +105,15 @@ int main()
     game_state.const_fps = FPS;
     game_state.fps = 0;
     game_state.frame_target_time = FRAME_TARGET_TIME;
+
     game_state.space_bar_was_pressed = 0;
+    game_state.w_was_pressed = 0;
+    game_state.s_was_pressed = 0;
+    game_state.a_was_pressed = 0;
+    game_state.d_was_pressed = 0;
+    game_state.e_was_pressed = 0;
+    game_state.q_was_pressed = 0;
+
     game_state.to_render = 1;
     game_state.to_update = 1;
     game_state.previous_frame_time = 0;
@@ -213,6 +228,8 @@ void process_input_window(game_state_t *game_state)
                         game_state->space_bar_was_pressed = 0;
                         break;
                     }
+                }
+                if (event.key.keysym.sym == SDLK_w) {
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:

@@ -28,6 +28,23 @@ typedef struct {
     Tri *elements;
 } Mesh; /* Tri ada array */
 
+typedef struct {
+    Mat2D position;
+    Mat2D direction;
+    float z_near;
+    float z_far;
+    float fov_deg;
+    float aspect_ratio;
+} Camera;
+
+typedef struct {
+    Mesh cube;
+    Mesh proj_cube;
+    Camera camera;
+    Mat2D light_direction;
+    Mat2D proj_mat;
+} Scene;
+
 #define AE_PRINT_TRI(tri) ae_print_tri(tri, #tri, 0)
 #define AE_PRINT_MESH(mesh) ae_print_mesh(mesh, #mesh, 0)
 
@@ -45,8 +62,10 @@ void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi);
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state);
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state);
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state, Scene *scene);
+Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state, Scene *scene);
+
+void update_camera_position(game_state_t *game_state);
 
 #endif /* ALMOG_ENGINE_H_ */
 
@@ -267,11 +286,19 @@ Mesh ae_create_cube(const size_t len)
 
 void ae_point_to_mat2D(Point p, Mat2D m)
 {
-    MATRIX2D_ASSERT(3 == m.rows && 1 == m.cols);
+    MATRIX2D_ASSERT((3 == m.rows && 1 == m.cols) || (1 == m.rows && 3 == m.cols));
     
-    MAT2D_AT(m, 0, 0) = p.x;
-    MAT2D_AT(m, 1, 0) = p.y;
-    MAT2D_AT(m, 2, 0) = p.z;
+    if (3 == m.rows) {
+        MAT2D_AT(m, 0, 0) = p.x;
+        MAT2D_AT(m, 1, 0) = p.y;
+        MAT2D_AT(m, 2, 0) = p.z;
+    }
+    if (3 == m.cols) {
+        MAT2D_AT(m, 0, 0) = p.x;
+        MAT2D_AT(m, 0, 1) = p.y;
+        MAT2D_AT(m, 0, 2) = p.z;
+    }
+
 }
 
 void ae_print_tri(Tri tri, char *name, size_t padding)
@@ -423,15 +450,23 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
     return des;
 }
 
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state)
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state, Scene *scene)
 {
     Mat2D tri_normal = mat2D_alloc(3, 1);
+    Mat2D temp_camera2tri = mat2D_alloc(3, 1);
+    Mat2D camera2tri = mat2D_alloc(1, 3);
+    Mat2D dot_product = mat2D_alloc(1, 1);
+    mat2D_fill(dot_product, 0);
     Tri des_tri;
 
     ae_calc_normal_to_tri(tri_normal, tri);
-    // MAT2D_PRINT(tri_normal);
+    ae_point_to_mat2D(tri.points[0], temp_camera2tri);
+    mat2D_sub(temp_camera2tri, scene->camera.position);
+    mat2D_transpose(camera2tri, temp_camera2tri);
 
-    if (MAT2D_AT(tri_normal, 2, 0) < 0) {
+    mat2D_dot(dot_product, camera2tri, tri_normal);
+
+    if (MAT2D_AT(dot_product, 0, 0) < 0) {
         des_tri.to_draw = true;
     } else {
         des_tri.to_draw = false;
@@ -453,7 +488,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_stat
     return des_tri;
 }
 
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state)
+Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state, Scene *scene)
 {
     Mesh des;
 
@@ -461,13 +496,35 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_s
 
     for (size_t i = 0; i < src.length; i++) {
         Tri temp_tri;
-        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], game_state);
+        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], game_state, scene);
         // AE_PRINT_TRI(temp_tri);
         
         ada_appand(Tri, des, temp_tri);
     }
 
     return des;
+}
+
+void update_camera_position(game_state_t *game_state)
+{
+    if (game_state->w_was_pressed) {
+        MAT2D_AT(scene.camera.position, 2, 0) += 0.1;
+    }
+    if (game_state->s_was_pressed) {
+        MAT2D_AT(scene.camera.position, 2, 0) -= 0.1;
+    }
+    if (game_state->e_was_pressed) {
+        MAT2D_AT(scene.camera.position, 1, 0) += 0.1;
+    }
+    if (game_state->q_was_pressed) {
+        MAT2D_AT(scene.camera.position, 1, 0) -= 0.1;
+    }
+    if (game_state->a_was_pressed) {
+        MAT2D_AT(scene.camera.position, 0, 0) -= 0.1;
+    }
+    if (game_state->d_was_pressed) {
+        MAT2D_AT(scene.camera.position, 0, 0) += 0.1;
+    }
 }
 
 #endif /* ALMOG_ENGINE_IMPLEMENTATION */

@@ -101,6 +101,7 @@ double mat2D_det_2x2_mat(Mat2D m);
 double mat2D_triangulate(Mat2D m);
 double mat2D_det(Mat2D m);
 void mat2D_LUP_decomposition_with_swap(Mat2D src, Mat2D l, Mat2D p, Mat2D u);
+void mat2D_transpose(Mat2D des, Mat2D src);
 void mat2D_invert(Mat2D des, Mat2D src);
 void mat2D_solve_linear_sys_LUP_decomposition(Mat2D A, Mat2D x, Mat2D B);
 
@@ -630,6 +631,18 @@ void mat2D_LUP_decomposition_with_swap(Mat2D src, Mat2D l, Mat2D p, Mat2D u)
         MAT2D_AT(l, i, i) = 1;
     }
     MAT2D_AT(l, l.rows-1, l.cols-1) = 1;
+}
+
+void mat2D_transpose(Mat2D des, Mat2D src)
+{
+    MATRIX2D_ASSERT(des.cols == src.rows);
+    MATRIX2D_ASSERT(des.rows == src.cols);
+
+    for (size_t index = 0; index < des.rows; ++index) {
+        for (size_t jndex = 0; jndex < des.cols; ++jndex) {
+            MAT2D_AT(des, index, jndex) = MAT2D_AT(src, jndex, index);
+        }
+    }
 }
 
 void mat2D_invert(Mat2D des, Mat2D src)
