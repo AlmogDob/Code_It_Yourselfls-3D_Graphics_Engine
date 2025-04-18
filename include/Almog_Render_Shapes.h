@@ -168,14 +168,15 @@ void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
     float b12 = p1.y - m12 * p1.x;
 
     float epsilon = 1e-3;
+    int gap = 15;
     // printf("m01: %f, m02: %f, m12: %f\n", m01, m02, m12);
     if (fabs(m02) < epsilon || fabs(m12) < epsilon || fabs(m01) < epsilon) return;
     for (int y = (int)p2.y; y < (int)p1.y; y++)
     {
         float x02 = (y - b02) / m02;
         float x12 = (y - b12) / m12;
-        if (x02 <= x_min-1 || x02 >= x_max+1) continue;
-        if (x12 <= x_min-1 || x12 >= x_max+1) continue;
+        if (x02 <= x_min-gap || x02 >= x_max+gap) continue;
+        if (x12 <= x_min-gap || x12 >= x_max+gap) continue;
         if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
         if (fabs(p1.x - p2.x) - fabs(p1.x - x12) < 0) continue;
         ars_draw_line(screen_mat, x02, y, x12, y, color);
@@ -184,8 +185,8 @@ void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
     for (int y = (int)p1.y; y <= (int)p0.y; y++) {
         float x01 = (y - b01) / m01;
         float x02 = (y - b02) / m02;
-        if (x01 <= x_min-1 || x01 >= x_max+1) continue;
-        if (x02 <= x_min-1 || x02 >= x_max+1) continue;
+        if (x01 <= x_min-gap || x01 >= x_max+gap) continue;
+        if (x02 <= x_min-gap || x02 >= x_max+gap) continue;
         if (fabs(p1.x - p0.x) - fabs(p1.x - x01) < 0) continue;
         if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
         ars_draw_line(screen_mat, x02, y, x01, y, color);
