@@ -21,55 +21,49 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 
 Mesh cube;
 Mesh proj_cube;
-
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri)
-{
-    Tri des_tri;
-    for (int i = 0; i < 3; i++) {
-        des_tri.points[i] = ae_project_point_world2screen(proj_mat, tri.points[i]);
-    }
-
-    return des_tri;
-}
-
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src)
-{
-    Mesh des;
-    for (int i = 0; i < src.length; i++) {
-        Tri temp_tri;
-        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i]);
-        ada_appand(Tri, des, temp_tri);
-    }
-
-    return des;
-}
+Mat2D proj_mat;
+float theta;
 
 void setup(game_state_t *game_state)
 {
     game_state->to_limit_fps = 0;
+    theta = 0;
 
-    ada_init_array(Tri, proj_cube);
+    cube = ae_create_cube(1);
+    // AE_PRINT_MESH(cube);
 
-    cube = ae_create_cube(100);
+    proj_mat = mat2D_alloc(4, 4);
 
-    Mat2D proj_mat = mat2D_alloc(4, 4);
     float z_near  = 0.1;
     float z_far   = 1000;
     float fov_deg = 90;
-    float ar      = game_state->window_h / game_state->window_w;
+    float ar      = (float)game_state->window_h / (float)game_state->window_w;
 
     ae_set_projection_mat(proj_mat, ar, fov_deg, z_near, z_far);
 
 
+    // AE_PRINT_MESH(proj_cube);
+
 }
 
+Mesh temp_cube;
 void update(game_state_t *game_state)
 {
-    (void)game_state;
+    theta += 50 * game_state->delta_time;
+
+    temp_cube = ae_create_copy_of_mesh(cube);
+
+    ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, 0, theta);
+    ae_translate_mesh(temp_cube, 0, 0, 2.5);
+
+    proj_cube = ae_project_mesh_world2screen(proj_mat, temp_cube, game_state);
 }
 
 void render(game_state_t *game_state)
 {
-    ars_draw_mesh(game_state->window_pixels_mat, cube, 0xFFFFFF);
+    ars_draw_mesh(game_state->window_pixels_mat, proj_cube, 0xFFFFFF);
+
+    free(proj_cube.elements);
+    free(temp_cube.elements);
 }
 

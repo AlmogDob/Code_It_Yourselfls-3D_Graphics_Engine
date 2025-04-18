@@ -52,7 +52,6 @@ double rand_double(void);
 
 Mat2D mat2D_alloc(size_t rows, size_t cols);
 void mat2D_free(Mat2D m);
-
 size_t mat2D_offset2d(Mat2D m, size_t i, size_t j);
 
 void mat2D_fill(Mat2D m, double x);
@@ -75,6 +74,9 @@ void mat2D_print_as_col(Mat2D m, const char *name, size_t padding);
 
 void mat2D_set_identity(Mat2D m);
 double mat2D_make_identity(Mat2D m);
+void mat2D_set_rot_mat_x(Mat2D m, float angle_deg);
+void mat2D_set_rot_mat_y(Mat2D m, float angle_deg);
+void mat2D_set_rot_mat_z(Mat2D m, float angle_deg);
 
 void mat2D_copy(Mat2D des, Mat2D src);
 void mat2D_copy_mat_to_mat_at_window(Mat2D des, Mat2D src, size_t is, size_t js, size_t ie, size_t je);
@@ -314,6 +316,42 @@ double mat2D_make_identity(Mat2D m)
 
 
     return factor_to_return;
+}
+
+void mat2D_set_rot_mat_x(Mat2D m, float angle_deg)
+{
+    MATRIX2D_ASSERT(3 == m.cols && 3 == m.rows);
+
+    float angle_rad = angle_deg * PI / 180;
+    mat2D_set_identity(m);
+    MAT2D_AT(m, 1, 1) =  cos(angle_rad);
+    MAT2D_AT(m, 1, 2) =  sin(angle_rad);
+    MAT2D_AT(m, 2, 1) = -sin(angle_rad);
+    MAT2D_AT(m, 2, 2) =  cos(angle_rad);
+}
+
+void mat2D_set_rot_mat_y(Mat2D m, float angle_deg)
+{
+    MATRIX2D_ASSERT(3 == m.cols && 3 == m.rows);
+
+    float angle_rad = angle_deg * PI / 180;
+    mat2D_set_identity(m);
+    MAT2D_AT(m, 0, 0) =  cos(angle_rad);
+    MAT2D_AT(m, 0, 2) = -sin(angle_rad);
+    MAT2D_AT(m, 2, 0) =  sin(angle_rad);
+    MAT2D_AT(m, 2, 2) =  cos(angle_rad);
+}
+
+void mat2D_set_rot_mat_z(Mat2D m, float angle_deg)
+{
+    MATRIX2D_ASSERT(3 == m.cols && 3 == m.rows);
+
+    float angle_rad = angle_deg * PI / 180;
+    mat2D_set_identity(m);
+    MAT2D_AT(m, 0, 0) =  cos(angle_rad);
+    MAT2D_AT(m, 0, 1) =  sin(angle_rad);
+    MAT2D_AT(m, 1, 0) = -sin(angle_rad);
+    MAT2D_AT(m, 1, 1) =  cos(angle_rad);
 }
 
 void mat2D_copy(Mat2D des, Mat2D src)

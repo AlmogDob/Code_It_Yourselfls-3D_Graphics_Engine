@@ -80,7 +80,7 @@ void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t co
             sy1 = sy2;
             sy2 = temp_y;
         }
-        for (y = sy1; y < sy2; y++) {
+        for (y = sy1; y <= sy2; y++) {
             ars_draw_point(screen_mat, x, y, color);
         }
     }

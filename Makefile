@@ -15,6 +15,9 @@ clean_main:
 	@echo
 	rm ./build/main
 
+debug_main: debug_build_main
+	gdb ./build/main
+
 debug_build_main: ./src/main.c
 	@gcc ./src/main.c $(CFLAGS) -g -o ./build/main
 # valgrind -s --leak-check=full ./main
