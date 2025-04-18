@@ -20,40 +20,35 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 #define PI M_PI
 
 float theta;
-Scene scene;
 
 void setup(game_state_t *game_state)
 {
     game_state->to_limit_fps = 0;
     theta = 0;
 
-    init_scene(game_state, &scene);
-
-    scene.cube = ae_create_cube(1);
+    game_state->scene.cube = ae_create_cube(1);
 }
 
 Mesh temp_cube;
 void update(game_state_t *game_state)
 {
-    update_camera_position(game_state, &scene);
-
     theta += 50 * game_state->delta_time;
 
-    temp_cube = ae_create_copy_of_mesh(scene.cube);
+    temp_cube = ae_create_copy_of_mesh(game_state->scene.cube);
 
     ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, theta * 0.3, theta);
     ae_translate_mesh(temp_cube, 0, 0, 2.5);
 
-    scene.proj_cube = ae_project_mesh_world2screen(scene.proj_mat, temp_cube, game_state, &scene);
+    game_state->scene.proj_cube = ae_project_mesh_world2screen(game_state->scene.proj_mat, temp_cube, game_state->window_w, game_state->window_h, &(game_state->scene));
 
     free(temp_cube.elements);
 }
 
 void render(game_state_t *game_state)
 {
-    ars_draw_mesh(game_state->window_pixels_mat, scene.proj_cube, 0xFFFFFF);
+    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
     // AE_PRINT_MESH(proj_cube);
 
-    free(scene.proj_cube.elements);
+    free(game_state->scene.proj_cube.elements);
 }
 

@@ -62,11 +62,8 @@ void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi);
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state, Scene *scene);
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state, Scene *scene);
-
-void init_scene(game_state_t *game_state, Scene *scene);
-void update_camera_position(game_state_t *game_state, Scene *scene);
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Scene *scene);
+Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Scene *scene);
 
 #endif /* ALMOG_ENGINE_H_ */
 
@@ -451,7 +448,7 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
     return des;
 }
 
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state, Scene *scene)
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Scene *scene)
 {
     Mat2D tri_normal = mat2D_alloc(3, 1);
     Mat2D temp_camera2tri = mat2D_alloc(3, 1);
@@ -480,8 +477,8 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_stat
         des_tri.points[i].x += 1;
         des_tri.points[i].y += 1;
 
-        des_tri.points[i].x *= 0.5f * game_state->window_w;
-        des_tri.points[i].y *= 0.5f * game_state->window_h;
+        des_tri.points[i].x *= 0.5f * window_w;
+        des_tri.points[i].y *= 0.5f * window_h;
     }
 
     mat2D_free(tri_normal);
@@ -489,7 +486,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_stat
     return des_tri;
 }
 
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state, Scene *scene)
+Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Scene *scene)
 {
     Mesh des;
 
@@ -497,7 +494,7 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_s
 
     for (size_t i = 0; i < src.length; i++) {
         Tri temp_tri;
-        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], game_state, scene);
+        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], window_w, window_h, scene);
         // AE_PRINT_TRI(temp_tri);
         
         ada_appand(Tri, des, temp_tri);
@@ -506,47 +503,6 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_s
     return des;
 }
 
-void init_scene(game_state_t *game_state, Scene *scene)
-{
-    scene->camera.z_near       = 0.1;
-    scene->camera.z_far        = 1000;
-    scene->camera.fov_deg      = 90;
-    scene->camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
 
-    scene->camera.position = mat2D_alloc(3, 1);
-    mat2D_fill(scene->camera.position, 0);
-    scene->camera.direction = mat2D_alloc(3, 1);
-    mat2D_fill(scene->camera.direction, 0);
-    MAT2D_AT(scene->camera.direction, 2, 0) = 1;
-
-    scene->light_direction = mat2D_alloc(3, 1);
-    mat2D_fill(scene->light_direction, 0);
-    MAT2D_AT(scene->light_direction, 2, 0) = -1;
-
-    scene->proj_mat = mat2D_alloc(4, 4);
-    ae_set_projection_mat(scene->proj_mat, scene->camera.aspect_ratio, scene->camera.fov_deg, scene->camera.z_near, scene->camera.z_far);
-}
-
-void update_camera_position(game_state_t *game_state, Scene *scene)
-{
-    if (game_state->w_was_pressed) {
-        MAT2D_AT(scene->camera.position, 2, 0) += 0.1;
-    }
-    if (game_state->s_was_pressed) {
-        MAT2D_AT(scene->camera.position, 2, 0) -= 0.1;
-    }
-    if (game_state->e_was_pressed) {
-        MAT2D_AT(scene->camera.position, 1, 0) += 0.1;
-    }
-    if (game_state->q_was_pressed) {
-        MAT2D_AT(scene->camera.position, 1, 0) -= 0.1;
-    }
-    if (game_state->a_was_pressed) {
-        MAT2D_AT(scene->camera.position, 0, 0) -= 0.1;
-    }
-    if (game_state->d_was_pressed) {
-        MAT2D_AT(scene->camera.position, 0, 0) += 0.1;
-    }
-}
 
 #endif /* ALMOG_ENGINE_IMPLEMENTATION */

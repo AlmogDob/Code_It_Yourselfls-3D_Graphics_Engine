@@ -11,7 +11,9 @@ void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t co
 void ars_draw_circle(Mat2D screen_mat, float center_x, float center_y, float r, uint32_t color);
 void ars_fill_circle(Mat2D screen_mat, float center_x, float center_y, float r, uint32_t color);
 void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color);
+void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color);
 void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color);
+void ars_fill_mesh_scanline_rasterizer(Mat2D screen_mat, Mesh mesh, uint32_t color);
 
 #endif /*ALMOG_RENDER_SHAPES_H_*/
 
@@ -118,12 +120,94 @@ void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color)
     ars_draw_line(screen_mat, tri.points[2].x, tri.points[2].y, tri.points[0].x, tri.points[0].y, color);
 }
 
+    /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
+
+/* This works but there are some artifacts */
+void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
+{
+    /* arranging the points according to y value */
+    Point p0 = tri.points[0];
+    Point p1 = tri.points[1];
+    Point p2 = tri.points[2];
+    if (p1.y > p0.y) {
+        Point temp = p1;
+        p1 = p0;
+        p0 = temp;
+    }
+    if (p2.y > p1.y) {
+        Point temp = p2;
+        p2 = p1;
+        p1 = temp;
+        if (p1.y > p0.y) {
+            Point temp = p1;
+            p1 = p0;
+            p0 = temp;
+        }
+    }
+    if (p2.y > p0.y) {
+        Point temp = p2;
+        p2 = p0;
+        p0 = temp;
+    }
+
+    /* finding max and min x */
+    int x_max = fmax(p0.x, fmax(p1.x, p2.x));
+    int x_min = fmin(p0.x, fmin(p1.x, p2.x));
+
+    if (p0.x == p1.x && p1.x == p2.x) {
+        ars_draw_tri(screen_mat, tri, color);
+        return;
+    }
+
+    /* The rasterization */
+    float m01 = (p0.y - p1.y) / (p0.x - p1.x);
+    float b01 = p0.y - m01 * p0.x;
+    float m02 = (p0.y - p2.y) / (p0.x - p2.x);
+    float b02 = p0.y - m02 * p0.x;
+    float m12 = (p1.y - p2.y) / (p1.x - p2.x);
+    float b12 = p1.y - m12 * p1.x;
+
+    float epsilon = 1e-3;
+    // printf("m01: %f, m02: %f, m12: %f\n", m01, m02, m12);
+    if (fabs(m02) < epsilon || fabs(m12) < epsilon || fabs(m01) < epsilon) return;
+    for (int y = (int)p2.y; y < (int)p1.y; y++)
+    {
+        float x02 = (y - b02) / m02;
+        float x12 = (y - b12) / m12;
+        if (x02 <= x_min-1 || x02 >= x_max+1) continue;
+        if (x12 <= x_min-1 || x12 >= x_max+1) continue;
+        if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
+        if (fabs(p1.x - p2.x) - fabs(p1.x - x12) < 0) continue;
+        ars_draw_line(screen_mat, x02, y, x12, y, color);
+        // printf("x02: %d, x12: %d, y: %d\n", (int)x02, (int)x12, (int)y);
+    }
+    for (int y = (int)p1.y; y <= (int)p0.y; y++) {
+        float x01 = (y - b01) / m01;
+        float x02 = (y - b02) / m02;
+        if (x01 <= x_min-1 || x01 >= x_max+1) continue;
+        if (x02 <= x_min-1 || x02 >= x_max+1) continue;
+        if (fabs(p1.x - p0.x) - fabs(p1.x - x01) < 0) continue;
+        if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
+        ars_draw_line(screen_mat, x02, y, x01, y, color);
+    }
+}
+
 void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color)
 {
     for (size_t i = 0; i < mesh.length; i++) {
         Tri tri = mesh.elements[i];
         if (tri.to_draw) {
             ars_draw_tri(screen_mat, tri, color);
+        }
+    }
+}
+
+void ars_fill_mesh_scanline_rasterizer(Mat2D screen_mat, Mesh mesh, uint32_t color)
+{
+    for (size_t i = 0; i < mesh.length; i++) {
+        Tri tri = mesh.elements[i];
+        if (tri.to_draw) {
+            ars_fill_tri_scanline_rasterizer(screen_mat, tri, color);
         }
     }
 }

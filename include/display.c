@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
+#include "Almog_Engine.h"
 
 #ifndef WINDOW_WIDTH
 #define WINDOW_WIDTH (16 * 50)
@@ -71,6 +72,8 @@ typedef struct {
     SDL_Texture *window_texture;
 
     Mat2D window_pixels_mat;
+    
+    Scene scene;
 } game_state_t;
 
 typedef struct {
@@ -94,6 +97,7 @@ void render(game_state_t *game_state);
 void check_window_mat_size(game_state_t *game_state);
 void *routine(void *arg);
 void copy_mat_to_surface_RGB(game_state_t *game_state);
+void init_scene(game_state_t *game_state);
 
 int main()
 {
@@ -193,6 +197,8 @@ void setup_window(game_state_t *game_state)
 
     game_state->window_pixels_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
 
+    init_scene(game_state);
+
     /*-----------------------------------*/
 
     setup(game_state);
@@ -230,6 +236,22 @@ void process_input_window(game_state_t *game_state)
                     }
                 }
                 if (event.key.keysym.sym == SDLK_w) {
+                    MAT2D_AT(game_state->scene.camera.position, 2, 0) += 0.1;
+                }
+                if (event.key.keysym.sym == SDLK_s) {
+                    MAT2D_AT(game_state->scene.camera.position, 2, 0) -= 0.1;
+                }
+                if (event.key.keysym.sym == SDLK_d) {
+                    MAT2D_AT(game_state->scene.camera.position, 0, 0) += 0.1;
+                }
+                if (event.key.keysym.sym == SDLK_a) {
+                    MAT2D_AT(game_state->scene.camera.position, 0, 0) -= 0.1;
+                }
+                if (event.key.keysym.sym == SDLK_e) {
+                    MAT2D_AT(game_state->scene.camera.position, 1, 0) += 0.1;
+                }
+                if (event.key.keysym.sym == SDLK_q) {
+                    MAT2D_AT(game_state->scene.camera.position, 1, 0) -= 0.1;
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
@@ -277,7 +299,7 @@ void render_window(game_state_t *game_state)
     if (game_state->to_clear_renderer) {
         SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
         SDL_RenderClear(game_state->renderer);
-        mat2D_fill(game_state->window_pixels_mat, 0);
+        mat2D_fill(game_state->window_pixels_mat, 0x111111);
     }
     /*------------------------------------------------------------------------*/
 
@@ -398,3 +420,23 @@ void copy_mat_to_surface_RGB(game_state_t *game_state)
     SDL_UnlockSurface(game_state->window_surface);
 }
 
+void init_scene(game_state_t *game_state)
+{
+    game_state->scene.camera.z_near       = 0.1;
+    game_state->scene.camera.z_far        = 1000;
+    game_state->scene.camera.fov_deg      = 90;
+    game_state->scene.camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
+
+    game_state->scene.camera.position = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.position, 0);
+    game_state->scene.camera.direction = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.direction, 0);
+    MAT2D_AT(game_state->scene.camera.direction, 2, 0) = 1;
+
+    game_state->scene.light_direction = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.light_direction, 0);
+    MAT2D_AT(game_state->scene.light_direction, 2, 0) = -1;
+
+    game_state->scene.proj_mat = mat2D_alloc(4, 4);
+    ae_set_projection_mat(game_state->scene.proj_mat, game_state->scene.camera.aspect_ratio, game_state->scene.camera.fov_deg, game_state->scene.camera.z_near, game_state->scene.camera.z_far);
+}
