@@ -121,7 +121,10 @@ void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color)
 void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color)
 {
     for (size_t i = 0; i < mesh.length; i++) {
-        ars_draw_tri(screen_mat, mesh.elements[i], color);
+        Tri tri = mesh.elements[i];
+        if (tri.to_draw) {
+            ars_draw_tri(screen_mat, tri, color);
+        }
     }
 }
 

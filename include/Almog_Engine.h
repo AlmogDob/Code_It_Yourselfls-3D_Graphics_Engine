@@ -9,6 +9,8 @@
 #define AE_ASSERT assert
 #endif
 
+#include <stdbool.h>
+
 typedef struct {
     float x;
     float y;
@@ -17,6 +19,7 @@ typedef struct {
 
 typedef struct {
     Point points[3];
+    bool to_draw;
 } Tri;
 
 typedef struct {
@@ -31,10 +34,12 @@ typedef struct {
 Tri ae_create_tri(Point p1, Point p2, Point p3);
 Mesh ae_create_copy_of_mesh(Mesh mesh);
 Mesh ae_create_cube(const size_t len);
+void ae_point_to_mat2D(Point p, Mat2D m);
 
 void ae_print_tri(Tri tri, char *name, size_t padding);
 void ae_print_mesh(Mesh mesh, char *name, size_t padding);
 
+void ae_calc_normal_to_tri(Mat2D normal, Tri tri);
 void ae_translate_mesh(Mesh mesh, float x, float y, float z);
 void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi);
 
@@ -76,7 +81,7 @@ Mesh ae_create_cube(const size_t len)
 
     ada_init_array(Tri, cube);
 
-    Tri tri1 = {
+    Tri tri1 = { /* south */
         .points[0].x = 0,
         .points[0].y = 0,
         .points[0].z = 0,
@@ -88,6 +93,7 @@ Mesh ae_create_cube(const size_t len)
         .points[2].x = len,
         .points[2].y = len,
         .points[2].z = 0,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri1);
     Tri tri2 = {
@@ -102,37 +108,40 @@ Mesh ae_create_cube(const size_t len)
         .points[2].x = 0,
         .points[2].y = 0,
         .points[2].z = 0,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri2);
-    Tri tri3 = {
-        .points[0].x = 0,
+    Tri tri3 = { /* north */
+        .points[0].x = len,
         .points[0].y = 0,
         .points[0].z = len,
 
-        .points[1].x = 0,
+        .points[1].x = len,
         .points[1].y = len,
         .points[1].z = len,
 
-        .points[2].x = len,
+        .points[2].x = 0,
         .points[2].y = len,
         .points[2].z = len,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri3);
     Tri tri4 = {
         .points[0].x = len,
-        .points[0].y = len,
+        .points[0].y = 0,
         .points[0].z = len,
 
-        .points[1].x = len,
-        .points[1].y = 0,
+        .points[1].x = 0,
+        .points[1].y = len,
         .points[1].z = len,
 
         .points[2].x = 0,
         .points[2].y = 0,
         .points[2].z = len,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri4);
-    Tri tri5 = {
+    Tri tri5 = { /* east */
         .points[0].x = len,
         .points[0].y = 0,
         .points[0].z = 0,
@@ -144,51 +153,55 @@ Mesh ae_create_cube(const size_t len)
         .points[2].x = len,
         .points[2].y = len,
         .points[2].z = len,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri5);
     Tri tri6 = {
         .points[0].x = len,
-        .points[0].y = len,
-        .points[0].z = len,
+        .points[0].y = 0,
+        .points[0].z = 0,
 
         .points[1].x = len,
-        .points[1].y = 0,
+        .points[1].y = len,
         .points[1].z = len,
 
         .points[2].x = len,
         .points[2].y = 0,
-        .points[2].z = 0,
+        .points[2].z = len,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri6);
-    Tri tri7 = {
+    Tri tri7 = { /* west */
         .points[0].x = 0,
         .points[0].y = 0,
-        .points[0].z = 0,
+        .points[0].z = len,
+
+        .points[1].x = 0,
+        .points[1].y = len,
+        .points[1].z = len,
+
+        .points[2].x = 0,
+        .points[2].y = len,
+        .points[2].z = 0,
+        .to_draw = true
+    };
+    ada_appand(Tri, cube, tri7);
+    Tri tri8 = {
+        .points[0].x = 0,
+        .points[0].y = 0,
+        .points[0].z = len,
 
         .points[1].x = 0,
         .points[1].y = len,
         .points[1].z = 0,
 
         .points[2].x = 0,
-        .points[2].y = len,
-        .points[2].z = len,
-    };
-    ada_appand(Tri, cube, tri7);
-    Tri tri8 = {
-        .points[0].x = 0,
-        .points[0].y = len,
-        .points[0].z = len,
-
-        .points[1].x = 0,
-        .points[1].y = 0,
-        .points[1].z = len,
-
-        .points[2].x = 0,
         .points[2].y = 0,
         .points[2].z = 0,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri8);
-    Tri tri9 = {
+    Tri tri9 = { /* top */
         .points[0].x = 0,
         .points[0].y = len,
         .points[0].z = 0,
@@ -199,13 +212,14 @@ Mesh ae_create_cube(const size_t len)
 
         .points[2].x = len,
         .points[2].y = len,
-        .points[2].z = 0,
+        .points[2].z = len,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri9);
     Tri tri10 = {
         .points[0].x = 0,
         .points[0].y = len,
-        .points[0].z = len,
+        .points[0].z = 0,
 
         .points[1].x = len,
         .points[1].y = len,
@@ -214,44 +228,57 @@ Mesh ae_create_cube(const size_t len)
         .points[2].x = len,
         .points[2].y = len,
         .points[2].z = 0,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri10);
-    Tri tri11 = {
-        .points[0].x = 0,
+    Tri tri11 = { /* bottom */
+        .points[0].x = len,
         .points[0].y = 0,
-        .points[0].z = 0,
+        .points[0].z = len,
 
         .points[1].x = 0,
         .points[1].y = 0,
         .points[1].z = len,
 
-        .points[2].x = len,
+        .points[2].x = 0,
         .points[2].y = 0,
         .points[2].z = 0,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri11);
     Tri tri12 = {
-        .points[0].x = 0,
+        .points[0].x = len,
         .points[0].y = 0,
         .points[0].z = len,
 
-        .points[1].x = len,
+        .points[1].x = 0,
         .points[1].y = 0,
-        .points[1].z = len,
+        .points[1].z = 0,
 
         .points[2].x = len,
         .points[2].y = 0,
         .points[2].z = 0,
+        .to_draw = true
     };
     ada_appand(Tri, cube, tri12);
     
     return cube;
 }
 
+void ae_point_to_mat2D(Point p, Mat2D m)
+{
+    MATRIX2D_ASSERT(3 == m.rows && 1 == m.cols);
+    
+    MAT2D_AT(m, 0, 0) = p.x;
+    MAT2D_AT(m, 1, 0) = p.y;
+    MAT2D_AT(m, 2, 0) = p.z;
+}
+
 void ae_print_tri(Tri tri, char *name, size_t padding)
 {
     printf("%*s%s:\n", (int) padding, "", name);
     printf("%*s    (%f, %f, %f)\n%*s    (%f, %f, %f)\n%*s    (%f, %f, %f)\n", (int) padding, "", tri.points[0].x, tri.points[0].y, tri.points[0].z, (int) padding, "", tri.points[1].x, tri.points[1].y, tri.points[1].z, (int) padding, "", tri.points[2].x, tri.points[2].y, tri.points[2].z);
+    printf("%*s    draw? %d\n", (int)padding, "", tri.to_draw);
 }
 
 void ae_print_mesh(Mesh mesh, char *name, size_t padding)
@@ -262,6 +289,30 @@ void ae_print_mesh(Mesh mesh, char *name, size_t padding)
         snprintf(tri_name, 256, "tri %zu", i);
         ae_print_tri(mesh.elements[i], tri_name, 4);
     }
+}
+
+void ae_calc_normal_to_tri(Mat2D normal, Tri tri)
+{
+    MATRIX2D_ASSERT(3 == normal.rows && 1 == normal.cols);
+
+    Mat2D a = mat2D_alloc(3, 1);
+    Mat2D b = mat2D_alloc(3, 1);
+    Mat2D c = mat2D_alloc(3, 1);
+
+    ae_point_to_mat2D(tri.points[0], a);
+    ae_point_to_mat2D(tri.points[1], b);
+    ae_point_to_mat2D(tri.points[2], c);
+
+    mat2D_sub(b, a);
+    mat2D_sub(c, a);
+
+    mat2D_cross(normal, b, c);
+
+    mat2D_mult(normal, 1/mat2D_calc_norma(normal));
+
+    mat2D_free(a);
+    mat2D_free(b);
+    mat2D_free(c);
 }
 
 void ae_translate_mesh(Mesh mesh, float x, float y, float z)
@@ -374,7 +425,18 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
 
 Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state)
 {
+    Mat2D tri_normal = mat2D_alloc(3, 1);
     Tri des_tri;
+
+    ae_calc_normal_to_tri(tri_normal, tri);
+    // MAT2D_PRINT(tri_normal);
+
+    if (MAT2D_AT(tri_normal, 2, 0) < 0) {
+        des_tri.to_draw = true;
+    } else {
+        des_tri.to_draw = false;
+    }
+
     for (int i = 0; i < 3; i++) {
         des_tri.points[i] = ae_project_point_world2screen(proj_mat, tri.points[i]);
 
@@ -385,6 +447,8 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_stat
         des_tri.points[i].x *= 0.5f * game_state->window_w;
         des_tri.points[i].y *= 0.5f * game_state->window_h;
     }
+
+    mat2D_free(tri_normal);
 
     return des_tri;
 }

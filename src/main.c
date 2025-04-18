@@ -53,17 +53,19 @@ void update(game_state_t *game_state)
 
     temp_cube = ae_create_copy_of_mesh(cube);
 
-    ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, 0, theta);
+    ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, theta * 0.3, theta);
     ae_translate_mesh(temp_cube, 0, 0, 2.5);
 
     proj_cube = ae_project_mesh_world2screen(proj_mat, temp_cube, game_state);
+
+    free(temp_cube.elements);
 }
 
 void render(game_state_t *game_state)
 {
     ars_draw_mesh(game_state->window_pixels_mat, proj_cube, 0xFFFFFF);
+    // AE_PRINT_MESH(proj_cube);
 
     free(proj_cube.elements);
-    free(temp_cube.elements);
 }
 

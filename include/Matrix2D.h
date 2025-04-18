@@ -59,6 +59,7 @@ void mat2D_fill_sequence(Mat2D m, double start, double step);
 void mat2D_rand(Mat2D m, double low, double high);
 
 void mat2D_dot(Mat2D dst, Mat2D a, Mat2D b);
+void mat2D_cross(Mat2D dst, Mat2D a, Mat2D b);
 
 void mat2D_add(Mat2D dst, Mat2D a);
 void mat2D_add_row_time_factor_to_row(Mat2D m, size_t des_r, size_t src_r, double factor);
@@ -184,6 +185,17 @@ void mat2D_dot(Mat2D dst, Mat2D a, Mat2D b)
         }
     }
 
+}
+
+void mat2D_cross(Mat2D dst, Mat2D a, Mat2D b)
+{
+    MATRIX2D_ASSERT(3 == dst.rows && 1 == dst.cols);
+    MATRIX2D_ASSERT(3 == a.rows && 1 == a.cols);
+    MATRIX2D_ASSERT(3 == b.rows && 1 == b.cols);
+
+    MAT2D_AT(dst, 0, 0) = MAT2D_AT(a, 1, 0) * MAT2D_AT(b, 2, 0) - MAT2D_AT(a, 2, 0) * MAT2D_AT(b, 1, 0);
+    MAT2D_AT(dst, 1, 0) = MAT2D_AT(a, 2, 0) * MAT2D_AT(b, 0, 0) - MAT2D_AT(a, 0, 0) * MAT2D_AT(b, 2, 0);
+    MAT2D_AT(dst, 2, 0) = MAT2D_AT(a, 0, 0) * MAT2D_AT(b, 1, 0) - MAT2D_AT(a, 1, 0) * MAT2D_AT(b, 0, 0);
 }
 
 void mat2D_add(Mat2D dst, Mat2D a)
