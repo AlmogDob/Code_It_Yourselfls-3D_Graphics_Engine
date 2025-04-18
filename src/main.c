@@ -27,23 +27,7 @@ void setup(game_state_t *game_state)
     game_state->to_limit_fps = 0;
     theta = 0;
 
-    scene.camera.z_near       = 0.1;
-    scene.camera.z_far        = 1000;
-    scene.camera.fov_deg      = 90;
-    scene.camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
-
-    scene.camera.position = mat2D_alloc(3, 1);
-    mat2D_fill(scene.camera.position, 0);
-    scene.camera.direction = mat2D_alloc(3, 1);
-    mat2D_fill(scene.camera.direction, 0);
-    MAT2D_AT(scene.camera.direction, 2, 0) = 1;
-
-    scene.light_direction = mat2D_alloc(3, 1);
-    mat2D_fill(scene.light_direction, 0);
-    MAT2D_AT(scene.light_direction, 2, 0) = -1;
-
-    scene.proj_mat = mat2D_alloc(4, 4);
-    ae_set_projection_mat(scene.proj_mat, scene.camera.aspect_ratio, scene.camera.fov_deg, scene.camera.z_near, scene.camera.z_far);
+    init_scene(game_state, &scene);
 
     scene.cube = ae_create_cube(1);
 }
@@ -51,6 +35,8 @@ void setup(game_state_t *game_state)
 Mesh temp_cube;
 void update(game_state_t *game_state)
 {
+    update_camera_position(game_state, &scene);
+
     theta += 50 * game_state->delta_time;
 
     temp_cube = ae_create_copy_of_mesh(scene.cube);

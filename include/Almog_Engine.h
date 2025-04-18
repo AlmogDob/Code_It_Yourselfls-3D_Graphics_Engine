@@ -65,7 +65,8 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
 Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, game_state_t *game_state, Scene *scene);
 Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_state, Scene *scene);
 
-void update_camera_position(game_state_t *game_state);
+void init_scene(game_state_t *game_state, Scene *scene);
+void update_camera_position(game_state_t *game_state, Scene *scene);
 
 #endif /* ALMOG_ENGINE_H_ */
 
@@ -505,25 +506,46 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, game_state_t *game_s
     return des;
 }
 
-void update_camera_position(game_state_t *game_state)
+void init_scene(game_state_t *game_state, Scene *scene)
+{
+    scene->camera.z_near       = 0.1;
+    scene->camera.z_far        = 1000;
+    scene->camera.fov_deg      = 90;
+    scene->camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
+
+    scene->camera.position = mat2D_alloc(3, 1);
+    mat2D_fill(scene->camera.position, 0);
+    scene->camera.direction = mat2D_alloc(3, 1);
+    mat2D_fill(scene->camera.direction, 0);
+    MAT2D_AT(scene->camera.direction, 2, 0) = 1;
+
+    scene->light_direction = mat2D_alloc(3, 1);
+    mat2D_fill(scene->light_direction, 0);
+    MAT2D_AT(scene->light_direction, 2, 0) = -1;
+
+    scene->proj_mat = mat2D_alloc(4, 4);
+    ae_set_projection_mat(scene->proj_mat, scene->camera.aspect_ratio, scene->camera.fov_deg, scene->camera.z_near, scene->camera.z_far);
+}
+
+void update_camera_position(game_state_t *game_state, Scene *scene)
 {
     if (game_state->w_was_pressed) {
-        MAT2D_AT(scene.camera.position, 2, 0) += 0.1;
+        MAT2D_AT(scene->camera.position, 2, 0) += 0.1;
     }
     if (game_state->s_was_pressed) {
-        MAT2D_AT(scene.camera.position, 2, 0) -= 0.1;
+        MAT2D_AT(scene->camera.position, 2, 0) -= 0.1;
     }
     if (game_state->e_was_pressed) {
-        MAT2D_AT(scene.camera.position, 1, 0) += 0.1;
+        MAT2D_AT(scene->camera.position, 1, 0) += 0.1;
     }
     if (game_state->q_was_pressed) {
-        MAT2D_AT(scene.camera.position, 1, 0) -= 0.1;
+        MAT2D_AT(scene->camera.position, 1, 0) -= 0.1;
     }
     if (game_state->a_was_pressed) {
-        MAT2D_AT(scene.camera.position, 0, 0) -= 0.1;
+        MAT2D_AT(scene->camera.position, 0, 0) -= 0.1;
     }
     if (game_state->d_was_pressed) {
-        MAT2D_AT(scene.camera.position, 0, 0) += 0.1;
+        MAT2D_AT(scene->camera.position, 0, 0) += 0.1;
     }
 }
 
