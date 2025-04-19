@@ -21,6 +21,7 @@ debug_main: debug_build_main
 debug_build_main: ./src/main.c
 	@gcc ./src/main.c $(CFLAGS) -g -o ./build/main
 # valgrind -s --leak-check=full ./main
+# cloc --exclude-lang=JSON,make .
 
 #############################################################
 temp: build_temp run_temp clean_temp  
