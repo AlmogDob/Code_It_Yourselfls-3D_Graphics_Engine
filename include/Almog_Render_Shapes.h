@@ -15,9 +15,11 @@ void ars_fill_circle(Mat2D screen_mat, float center_x, float center_y, float r, 
 
 void ars_draw_tri(Mat2D screen_mat, Tri tri, uint32_t color);
 void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color);
+void ars_fill_tri_Pinedas_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color);
 
 void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color);
 void ars_fill_mesh_scanline_rasterizer(Mat2D screen_mat, Mesh mesh, uint32_t color);
+void ars_fill_mesh_Pinedas_rasterizer(Mat2D screen_mat, Mesh mesh, uint32_t color);
 
 #endif /*ALMOG_RENDER_SHAPES_H_*/
 
@@ -93,9 +95,9 @@ void ars_draw_line(Mat2D screen_mat, int x1, int y1, int x2, int y2, uint32_t co
 
 }
 
+/* This function is a bit complicated and expansive but this is what I could come up with */
 void ars_draw_arrow(Mat2D screen_mat, int xs, int ys, int xe, int ye, float head_size, float angle_deg, uint32_t color)
 {
-    /* This function is a bit complicated but this is what I could come up with */
     Mat2D pe = mat2D_alloc(3, 1);
     mat2D_fill(pe, 0);
     MAT2D_AT(pe, 0, 0) = xe;
@@ -250,6 +252,91 @@ void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
     }
 }
 
+/* Works good but very slow! (the dynamic allocation is bad for performance)*/
+void ars_fill_tri_Pinedas_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
+{
+    /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
+
+    Mat2D p0       = mat2D_alloc(3, 1);
+    Mat2D p1       = mat2D_alloc(3, 1);
+    Mat2D p2       = mat2D_alloc(3, 1);
+    Mat2D v01      = mat2D_alloc(3, 1);
+    Mat2D v12      = mat2D_alloc(3, 1);
+    Mat2D v20      = mat2D_alloc(3, 1);
+    Mat2D p        = mat2D_alloc(3, 1);
+    Mat2D v0p      = mat2D_alloc(3, 1);
+    Mat2D v1p      = mat2D_alloc(3, 1);
+    Mat2D v2p      = mat2D_alloc(3, 1);
+    Mat2D cross012 = mat2D_alloc(3, 1);
+    Mat2D cross01p = mat2D_alloc(3, 1);
+    Mat2D cross12p = mat2D_alloc(3, 1);
+    Mat2D cross20p = mat2D_alloc(3, 1);
+
+    ae_point_to_mat2D(tri.points[0], p0);
+    ae_point_to_mat2D(tri.points[1], p1);
+    ae_point_to_mat2D(tri.points[2], p2);
+
+    mat2D_copy(v01, p1);
+    mat2D_sub(v01, p0);
+    mat2D_copy(v12, p2);
+    mat2D_sub(v12, p1);
+    mat2D_copy(v20, p0);
+    mat2D_sub(v20, p2);
+
+    mat2D_cross(cross012, v01, v12);
+    float w = MAT2D_AT(cross012, 2, 0);
+
+    /* finding bounding box */
+    int x_min = fmin(MAT2D_AT(p0, 0, 0), fmin(MAT2D_AT(p1, 0, 0), MAT2D_AT(p2, 0, 0)));
+    int x_max = fmax(MAT2D_AT(p0, 0, 0), fmax(MAT2D_AT(p1, 0, 0), MAT2D_AT(p2, 0, 0)));
+    int y_min = fmin(MAT2D_AT(p0, 1, 0), fmin(MAT2D_AT(p1, 1, 0), MAT2D_AT(p2, 1, 0)));
+    int y_max = fmax(MAT2D_AT(p0, 1, 0), fmax(MAT2D_AT(p1, 1, 0), MAT2D_AT(p2, 1, 0)));
+    // printf("xmin: %d, xmax: %d || ymin: %d, ymax: %d\n", x_min, x_max, y_min, y_max);
+
+    for (int y = y_min; y <= y_max; y++) {
+        for (int x = x_min; x <= x_max; x++) {
+            // ars_draw_point(screen_mat, x, y, color);
+            MAT2D_AT(p, 0, 0) = x;
+            MAT2D_AT(p, 1, 0) = y;
+            MAT2D_AT(p, 2, 0) = 0;
+
+            mat2D_copy(v0p, p);
+            mat2D_sub(v0p, p0);
+            mat2D_copy(v1p, p);
+            mat2D_sub(v1p, p1);
+            mat2D_copy(v2p, p);
+            mat2D_sub(v2p, p2);
+
+            mat2D_cross(cross01p, v01, v0p);
+            mat2D_cross(cross12p, v12, v1p);
+            mat2D_cross(cross20p, v20, v2p);
+
+            float w0 = MAT2D_AT(cross01p, 2, 0);
+            float w1 = MAT2D_AT(cross12p, 2, 0);
+            float w2 = MAT2D_AT(cross20p, 2, 0);
+
+            if (w0 * w > 0 && w1 * w > 0 &&  w2 * w > 0) {
+                ars_draw_point(screen_mat, x, y, color);
+            }
+        }
+    }
+
+    mat2D_free(p0);   
+    mat2D_free(p1);   
+    mat2D_free(p2);   
+    mat2D_free(v01);   
+    mat2D_free(v12);   
+    mat2D_free(v20);   
+    mat2D_free(p);   
+    mat2D_free(v0p);   
+    mat2D_free(v1p);   
+    mat2D_free(v2p);   
+    mat2D_free(cross012);   
+    mat2D_free(cross01p);   
+    mat2D_free(cross12p);   
+    mat2D_free(cross20p);   
+}
+
 void ars_draw_mesh(Mat2D screen_mat, Mesh mesh, uint32_t color)
 {
     for (size_t i = 0; i < mesh.length; i++) {
@@ -266,6 +353,16 @@ void ars_fill_mesh_scanline_rasterizer(Mat2D screen_mat, Mesh mesh, uint32_t col
         Tri tri = mesh.elements[i];
         if (tri.to_draw) {
             ars_fill_tri_scanline_rasterizer(screen_mat, tri, color);
+        }
+    }
+}
+
+void ars_fill_mesh_Pinedas_rasterizer(Mat2D screen_mat, Mesh mesh, uint32_t color)
+{
+    for (size_t i = 0; i < mesh.length; i++) {
+        Tri tri = mesh.elements[i];
+        if (tri.to_draw) {
+            ars_fill_tri_Pinedas_rasterizer(screen_mat, tri, color);
         }
     }
 }
