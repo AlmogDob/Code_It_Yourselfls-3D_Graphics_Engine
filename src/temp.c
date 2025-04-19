@@ -10,7 +10,6 @@
 #include "./../include/Almog_Engine.h"
 
 float theta;
-Tri tri;
 
 void setup(game_state_t *game_state)
 {
@@ -38,15 +37,9 @@ void update(game_state_t *game_state)
 
 void render(game_state_t *game_state)
 {
-    // ars_fill_mesh_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x00AA00);
+    ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, -1);
 
-    // ars_fill_tri_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube.elements[0], 0xFFFFFF);
-    // ars_fill_tri_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube.elements[1], 0xFFFFFF);
-
-    // ars_draw_tri(game_state->window_pixels_mat, game_state->scene.proj_cube.elements[0], 0x0000FF);
-    ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
-
-    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
+    // ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
     
     free(game_state->scene.proj_cube.elements);
 }

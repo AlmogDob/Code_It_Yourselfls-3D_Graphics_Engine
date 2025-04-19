@@ -35,6 +35,7 @@
 #define dprintSIZE_T(expr) printf(#expr " = %zu\n", expr)
 
 #define HexARGB_RGBA(x) (x>>(8*2)&0xFF), (x>>(8*1)&0xFF), (x>>(8*0)&0xFF), (x>>(8*3)&0xFF)
+#define HexARGB_RGBA_VAR(x) uint8_t r = (x>>(8*2)&0xFF); uint8_t g = (x>>(8*1)&0xFF); uint8_t b = (x>>(8*0)&0xFF); uint8_t a = (x>>(8*3)&0xFF)
 #define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
 #define RGB_hexRGB(r, g, b) (int)(0x010000*(r) + 0x000100*(g) + 0x000001*(b))
 
@@ -215,9 +216,6 @@ void process_input_window(game_state_t *game_state)
                 break;
             case SDL_KEYDOWN:
                 if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    game_state->game_is_running = 0;
-                }
-                if (event.key.keysym.sym == SDLK_q) {
                     game_state->game_is_running = 0;
                 }
                 if (event.key.keysym.sym == SDLK_SPACE) {
