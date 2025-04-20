@@ -73,7 +73,7 @@ typedef struct {
     SDL_Surface *window_surface;
     SDL_Texture *window_texture;
 
-    Mat2D window_pixels_mat;
+    Mat2D_uint32 window_pixels_mat;
     
     Scene scene;
 } game_state_t;
@@ -197,7 +197,7 @@ void setup_window(game_state_t *game_state)
 
     game_state->window_surface = SDL_GetWindowSurface(game_state->window);
 
-    game_state->window_pixels_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
+    game_state->window_pixels_mat = mat2D_alloc_uint32(game_state->window_h, game_state->window_w);
 
     init_scene(game_state);
 
@@ -298,7 +298,8 @@ void render_window(game_state_t *game_state)
     if (game_state->to_clear_renderer) {
         SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
         SDL_RenderClear(game_state->renderer);
-        mat2D_fill(game_state->window_pixels_mat, 0x181818);
+        // mat2D_fill(game_state->window_pixels_mat, 0x181818);
+        memset(game_state->window_pixels_mat.elements, 0x18, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
     }
     /*------------------------------------------------------------------------*/
 
@@ -313,7 +314,7 @@ void render_window(game_state_t *game_state)
 
 void destroy_window(game_state_t *game_state)
 {
-    mat2D_free(game_state->window_pixels_mat);
+    mat2D_free_uint32(game_state->window_pixels_mat);
 
     if (!game_state->window_surface) SDL_FreeSurface(game_state->window_surface);
     if (!game_state->window_texture) SDL_DestroyTexture(game_state->window_texture);
@@ -357,9 +358,9 @@ void render(game_state_t *game_state) { (void)game_state; }
 void check_window_mat_size(game_state_t *game_state)
 {
     if (game_state->window_h != (int)game_state->window_pixels_mat.rows || game_state->window_w != (int)game_state->window_pixels_mat.cols) {
-        mat2D_free(game_state->window_pixels_mat);
+        mat2D_free_uint32(game_state->window_pixels_mat);
         SDL_FreeSurface(game_state->window_surface);
-        game_state->window_pixels_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
+        game_state->window_pixels_mat = mat2D_alloc_uint32(game_state->window_h, game_state->window_w);
         // printf("hello\nmat rows: %5zu, mat cols: %5zu\n", game_state->window_pixels_mat.rows, game_state->window_pixels_mat.cols);
         game_state->window_surface = SDL_GetWindowSurface(game_state->window);
     }
@@ -392,32 +393,32 @@ void copy_mat_to_surface_RGB(game_state_t *game_state)
 
     check_window_mat_size(game_state);
 
-    SDL_LockSurface(game_state->window_surface);
+    // SDL_LockSurface(game_state->window_surface);
 
-    pitch = game_state->window_surface->pitch;
-    pixels = game_state->window_surface->pixels;
+    // pitch = game_state->window_surface->pitch;
+    // pixels = game_state->window_surface->pixels;
 
-    pitch = pitch/4;
-    assert((int)game_state->window_pixels_mat.cols <= pitch);
+    // pitch = pitch/4;
+    // assert((int)game_state->window_pixels_mat.cols <= pitch);
 
-    for (int i = 0; i < th_count; i++) {
-        th_arg_array[i].id = i;
-        th_arg_array[i].th_count = th_count;
-        th_arg_array[i].mat = game_state->window_pixels_mat;
-        th_arg_array[i].pixels = pixels;
+    // for (int i = 0; i < th_count; i++) {
+    //     th_arg_array[i].id = i;
+    //     th_arg_array[i].th_count = th_count;
+    //     th_arg_array[i].mat = game_state->window_pixels_mat;
+    //     th_arg_array[i].pixels = pixels;
 
-        if (pthread_create(th+i, NULL, &routine, (void *)&th_arg_array[i]) != 0) {
-            fprintf(stderr, "%s:%d: [Error] failed to create thread: %s", __FILE__, __LINE__, strerror(errno));
-            exit(1);
-        }
-    }
-    for (int i = 0; i < th_count; i++) {
-        if (pthread_join(th[i], NULL) != 0) {
-            fprintf(stderr, "%s:%d: [Error] failed to join thread: %s", __FILE__, __LINE__, strerror(errno));
-            exit(2);
-        }
-    }
-    SDL_UnlockSurface(game_state->window_surface);
+    //     if (pthread_create(th+i, NULL, &routine, (void *)&th_arg_array[i]) != 0) {
+    //         fprintf(stderr, "%s:%d: [Error] failed to create thread: %s", __FILE__, __LINE__, strerror(errno));
+    //         exit(1);
+    //     }
+    // }
+    // for (int i = 0; i < th_count; i++) {
+    //     if (pthread_join(th[i], NULL) != 0) {
+    //         fprintf(stderr, "%s:%d: [Error] failed to join thread: %s", __FILE__, __LINE__, strerror(errno));
+    //         exit(2);
+    //     }
+    // }
+    // SDL_UnlockSurface(game_state->window_surface);
 }
 
 void init_scene(game_state_t *game_state)

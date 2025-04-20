@@ -37,6 +37,13 @@ typedef struct {
     size_t rows;
     size_t cols;
     size_t stride_r; /* how many element you need to traves to get to the element underneath */
+    uint32_t *elements;
+} Mat2D_uint32;
+
+typedef struct {
+    size_t rows;
+    size_t cols;
+    size_t stride_r; /* how many element you need to traves to get to the element underneath */
     size_t *rows_list;
     size_t *cols_list;
     Mat2D ref_mat;
@@ -56,7 +63,9 @@ typedef struct {
 double rand_double(void);
 
 Mat2D mat2D_alloc(size_t rows, size_t cols);
+Mat2D_uint32 mat2D_alloc_uint32(size_t rows, size_t cols);
 void mat2D_free(Mat2D m);
+void mat2D_free_uint32(Mat2D_uint32 m);
 size_t mat2D_offset2d(Mat2D m, size_t i, size_t j);
 
 void mat2D_fill(Mat2D m, double x);
@@ -139,7 +148,24 @@ Mat2D mat2D_alloc(size_t rows, size_t cols)
     return m;
 }
 
+Mat2D_uint32 mat2D_alloc_uint32(size_t rows, size_t cols)
+{
+    Mat2D_uint32 m;
+    m.rows = rows;
+    m.cols = cols;
+    m.stride_r = cols;
+    m.elements = (uint32_t*)MATRIX2D_MALLOC(sizeof(uint32_t)*rows*cols);
+    MATRIX2D_ASSERT(m.elements != NULL);
+    
+    return m;
+}
+
 void mat2D_free(Mat2D m)
+{
+    free(m.elements);
+}
+
+void mat2D_free_uint32(Mat2D_uint32 m)
 {
     free(m.elements);
 }
