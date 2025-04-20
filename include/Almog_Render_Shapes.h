@@ -36,7 +36,7 @@ void ars_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, int co
 void ars_draw_point(Mat2D_uint32 screen_mat, int x, int y, uint32_t color)
 {
     if ((x < (int)screen_mat.cols && y < (int)screen_mat.rows) && (x >= 0 && y >= 0)) { /* point is in screen */
-        MAT2D_AT(screen_mat, y, x) = color;
+        MAT2D_AT_UINT32(screen_mat, y, x) = color;
     }
 }
 

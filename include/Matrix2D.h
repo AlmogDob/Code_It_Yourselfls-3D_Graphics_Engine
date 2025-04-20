@@ -49,10 +49,12 @@ typedef struct {
     Mat2D ref_mat;
 } Mat2D_Minor;
 
-#if 0
+#if 1
 #define MAT2D_AT(m, i, j) (m).elements[mat2D_offset2d((m), (i), (j))]
+#define MAT2D_AT_UINT32(m, i, j) (m).elements[mat2D_offset2d_uint32((m), (i), (j))]
 #else /* use this macro for batter performance but no assertion */
 #define MAT2D_AT(m, i, j) (m).elements[i * m.stride_r + j]
+#define MAT2D_AT_UINT32(m, i, j) (m).elements[i * m.stride_r + j]
 #endif
 
 #define MAT2D_MINOR_AT(mm, i, j) MAT2D_AT(mm.ref_mat, mm.rows_list[i], mm.cols_list[j])
@@ -67,6 +69,7 @@ Mat2D_uint32 mat2D_alloc_uint32(size_t rows, size_t cols);
 void mat2D_free(Mat2D m);
 void mat2D_free_uint32(Mat2D_uint32 m);
 size_t mat2D_offset2d(Mat2D m, size_t i, size_t j);
+size_t mat2D_offset2d_uint32(Mat2D_uint32 m, size_t i, size_t j);
 
 void mat2D_fill(Mat2D m, double x);
 void mat2D_fill_sequence(Mat2D m, double start, double step);
@@ -171,6 +174,12 @@ void mat2D_free_uint32(Mat2D_uint32 m)
 }
 
 size_t mat2D_offset2d(Mat2D m, size_t i, size_t j)
+{
+    MATRIX2D_ASSERT(i < m.rows && j < m.cols);
+    return i * m.stride_r + j;
+}
+
+size_t mat2D_offset2d_uint32(Mat2D_uint32 m, size_t i, size_t j)
 {
     MATRIX2D_ASSERT(i < m.rows && j < m.cols);
     return i * m.stride_r + j;
