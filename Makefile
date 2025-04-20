@@ -58,7 +58,8 @@ profile_temp: profile_build_temp
 	imview ./output.png
 	# xdg-open ./output.png
 	@echo
-	rm ./gmon.out ./output.png
+	rm ./gmon.out ./output.png 
+	make clean_temp
 
 profile_build_temp: ./src/temp.c
 	gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp

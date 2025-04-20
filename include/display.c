@@ -78,13 +78,6 @@ typedef struct {
     Scene scene;
 } game_state_t;
 
-typedef struct {
-    int id;
-    int th_count;
-    Mat2D mat;
-    uint32_t *pixels;
-} thread_arg_t;
-
 int initialize_window(game_state_t *game_state);
 void setup_window(game_state_t *game_state);
 void process_input_window(game_state_t *game_state);
@@ -97,7 +90,6 @@ void update(game_state_t *game_state);
 void render(game_state_t *game_state);
 
 void check_window_mat_size(game_state_t *game_state);
-void *routine(void *arg);
 void copy_mat_to_surface_RGB(game_state_t *game_state);
 void init_scene(game_state_t *game_state);
 
@@ -366,59 +358,15 @@ void check_window_mat_size(game_state_t *game_state)
     }
 }
 
-void *routine(void *arg)
-{
-    thread_arg_t th_arg = *(thread_arg_t *)arg;
-
-    for (size_t r = 0; r < th_arg.mat.rows; r++) {
-        for (size_t c = th_arg.id*th_arg.mat.cols/th_arg.th_count; c < th_arg.mat.cols/th_arg.th_count * (th_arg.id+1); c++) {
-            th_arg.pixels[r*th_arg.mat.cols + c] = MAT2D_AT(th_arg.mat, r, c);
-        }
-    }
-    // printf("from: %d, to: %d\n", th_arg.id*(int)th_arg.mat.cols/TH_COUNT, (int)th_arg.mat.cols/TH_COUNT * (th_arg.id+1));
-
-    return 0; 
-}
-
 void copy_mat_to_surface_RGB(game_state_t *game_state)
 {
-    pthread_t th[TH_COUNT];
-    thread_arg_t th_arg_array[TH_COUNT];
-    int pitch;
-    uint32_t *pixels;
-    int th_count = TH_COUNT;
-    if (!((game_state->window_pixels_mat.cols % TH_COUNT == 0) && (game_state->window_pixels_mat.rows % TH_COUNT == 0))) {
-        th_count = 1;
-    }
-
     check_window_mat_size(game_state);
 
-    // SDL_LockSurface(game_state->window_surface);
+    SDL_LockSurface(game_state->window_surface);
 
-    // pitch = game_state->window_surface->pitch;
-    // pixels = game_state->window_surface->pixels;
+    memcpy(game_state->window_surface->pixels, game_state->window_pixels_mat.elements, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
 
-    // pitch = pitch/4;
-    // assert((int)game_state->window_pixels_mat.cols <= pitch);
-
-    // for (int i = 0; i < th_count; i++) {
-    //     th_arg_array[i].id = i;
-    //     th_arg_array[i].th_count = th_count;
-    //     th_arg_array[i].mat = game_state->window_pixels_mat;
-    //     th_arg_array[i].pixels = pixels;
-
-    //     if (pthread_create(th+i, NULL, &routine, (void *)&th_arg_array[i]) != 0) {
-    //         fprintf(stderr, "%s:%d: [Error] failed to create thread: %s", __FILE__, __LINE__, strerror(errno));
-    //         exit(1);
-    //     }
-    // }
-    // for (int i = 0; i < th_count; i++) {
-    //     if (pthread_join(th[i], NULL) != 0) {
-    //         fprintf(stderr, "%s:%d: [Error] failed to join thread: %s", __FILE__, __LINE__, strerror(errno));
-    //         exit(2);
-    //     }
-    // }
-    // SDL_UnlockSurface(game_state->window_surface);
+    SDL_UnlockSurface(game_state->window_surface);
 }
 
 void init_scene(game_state_t *game_state)
