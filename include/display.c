@@ -2,7 +2,6 @@
 #include <SDL2/SDL_ttf.h>
 #include <math.h>
 #include "Matrix2D.h"
-#include <pthread.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
@@ -23,10 +22,6 @@
 
 #ifndef FRAME_TARGET_TIME
 #define FRAME_TARGET_TIME (1000 / FPS)
-#endif
-
-#ifndef TH_COUNT
-#define TH_COUNT 4
 #endif
 
 #define dprintSTRING(expr) printf(#expr " = %s\n", expr)
