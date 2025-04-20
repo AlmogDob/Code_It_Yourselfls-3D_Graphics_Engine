@@ -42,7 +42,12 @@ typedef struct {
     Mat2D ref_mat;
 } Mat2D_Minor;
 
+#if 0
 #define MAT2D_AT(m, i, j) (m).elements[mat2D_offset2d((m), (i), (j))]
+#else /* use this macro for batter performance but no assertion */
+#define MAT2D_AT(m, i, j) (m).elements[i * m.stride_r + j]
+#endif
+
 #define MAT2D_MINOR_AT(mm, i, j) MAT2D_AT(mm.ref_mat, mm.rows_list[i], mm.cols_list[j])
 #define MAT2D_PRINT(m) mat2D_print(m, #m, 0)
 #define MAT2D_PRINT_AS_COL(m) mat2D_print_as_col(m, #m, 0)
@@ -180,6 +185,7 @@ void mat2D_dot(Mat2D dst, Mat2D a, Mat2D b)
 
     for (size_t i = 0; i < dst.rows; i++) {
         for (size_t j = 0; j < dst.cols; j++) {
+            MAT2D_AT(dst, i, j) = 0;
             for (size_t k = 0; k < n; k++) {
                 MAT2D_AT(dst, i, j) += MAT2D_AT(a, i, k)*MAT2D_AT(b, k, j);
             }

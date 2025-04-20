@@ -259,6 +259,7 @@ void ars_fill_tri_scanline_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
     }
 }
 
+/* This function is the function for rasterization */
 void ars_fill_tri_Pinedas_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
 {
     /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
@@ -269,6 +270,9 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
     p2 = tri.points[2];
 
     float w = edge_cross_point(p0, p1, p1, p2);
+    if (!w) {
+        ars_draw_tri(screen_mat, tri, color);
+    }
     MATRIX2D_ASSERT(w != 0 && "triangle has area");
 
     /* fill conventions */
@@ -299,7 +303,6 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D screen_mat, Tri tri, uint32_t color)
     }
 }
 
-/* This function is the function for rasterization */
 void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D screen_mat, Tri tri, uint32_t color)
 {
     /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */

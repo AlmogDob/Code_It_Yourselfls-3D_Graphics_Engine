@@ -362,9 +362,9 @@ void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi)
     Mat2D RotX = mat2D_alloc(3,3);
     mat2D_set_rot_mat_x(RotX, phi);
     Mat2D DCM = mat2D_alloc(3,3);
-    mat2D_fill(DCM,0);
+    // mat2D_fill(DCM,0);
     Mat2D temp = mat2D_alloc(3,3);
-    mat2D_fill(temp,0);
+    // mat2D_fill(temp,0);
     mat2D_dot(temp, RotY, RotZ);
     mat2D_dot(DCM, RotX, temp); /* I have a DCM */
 
@@ -373,8 +373,8 @@ void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi)
 
     for (size_t i = 0; i < mesh.length; i++) {
         for (int j = 0; j < 3; j++) {
-            mat2D_fill(src_point_mat, 0);
-            mat2D_fill(des_point_mat, 0);
+            // mat2D_fill(src_point_mat, 0);
+            // mat2D_fill(des_point_mat, 0);
             Point des;
             Point src = mesh.elements[i].points[j];
 
@@ -420,9 +420,9 @@ void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, flo
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
 {
     Mat2D src_point_mat = mat2D_alloc(1,4);
-    mat2D_fill(src_point_mat, 0);
+    // mat2D_fill(src_point_mat, 0);
     Mat2D des_point_mat = mat2D_alloc(1,4);
-    mat2D_fill(des_point_mat, 0);
+    // mat2D_fill(des_point_mat, 0);
     Point des;
 
     MAT2D_AT(src_point_mat, 0, 0) = src.x;
@@ -454,7 +454,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     Mat2D temp_camera2tri = mat2D_alloc(3, 1);
     Mat2D camera2tri = mat2D_alloc(1, 3);
     Mat2D dot_product = mat2D_alloc(1, 1);
-    mat2D_fill(dot_product, 0);
+    // mat2D_fill(dot_product, 0);
     Tri des_tri;
 
     ae_calc_normal_to_tri(tri_normal, tri);

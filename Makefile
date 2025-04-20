@@ -19,7 +19,17 @@ debug_main: debug_build_main
 	gdb ./build/main
 
 debug_build_main: ./src/main.c
-	@gcc ./src/main.c $(CFLAGS) -g -o ./build/main
+	gcc ./src/main.c $(CFLAGS) -ggdb -o ./build/main
+
+profile_main: profile_build_main
+	./build/main
+	gprof ./build/main
+	@echo
+	rm gmon.out
+
+profile_build_main: ./src/main.c
+	gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
+
 # valgrind -s --leak-check=full ./main
 # cloc --exclude-lang=JSON,make .
 
@@ -40,4 +50,18 @@ clean_temp:
 
 debug_build_temp: ./src/temp.c
 	@gcc ./src/temp.c $(CFLAGS) -g -o ./build/temp
+
+profile_temp: profile_build_temp
+	./build/temp
+	@echo
+	gprof ./build/temp gmon.out | /home/almog/.local/bin/gprof2dot | dot -Tpng -Gdpi=200 -o output.png
+	imview ./output.png
+	# xdg-open ./output.png
+	@echo
+	rm ./gmon.out ./output.png
+
+profile_build_temp: ./src/temp.c
+	gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp
+
 # valgrind -s --leak-check=full ./temp
+# cloc --exclude-lang=JSON,make .

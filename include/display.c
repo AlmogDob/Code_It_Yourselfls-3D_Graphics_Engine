@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
+#include <string.h>
 #include "Almog_Engine.h"
 
 #ifndef WINDOW_WIDTH
@@ -297,7 +298,7 @@ void render_window(game_state_t *game_state)
     if (game_state->to_clear_renderer) {
         SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
         SDL_RenderClear(game_state->renderer);
-        mat2D_fill(game_state->window_pixels_mat, 0x111111);
+        mat2D_fill(game_state->window_pixels_mat, 0x181818);
     }
     /*------------------------------------------------------------------------*/
 
@@ -389,8 +390,9 @@ void copy_mat_to_surface_RGB(game_state_t *game_state)
         th_count = 1;
     }
 
-    SDL_LockSurface(game_state->window_surface);
     check_window_mat_size(game_state);
+
+    SDL_LockSurface(game_state->window_surface);
 
     pitch = game_state->window_surface->pitch;
     pixels = game_state->window_surface->pixels;
