@@ -15,15 +15,12 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 #define ALMOG_ENGINE_IMPLEMENTATION
 #include "./../include/Almog_Engine.h"
 
-#include <math.h>
-
-#define PI M_PI
-
 float theta;
 
 void setup(game_state_t *game_state)
 {
     game_state->to_limit_fps = 0;
+    // game_state->const_fps = 60;
     theta = 0;
 
     game_state->scene.cube = ae_create_cube(1);
@@ -46,9 +43,10 @@ void update(game_state_t *game_state)
 
 void render(game_state_t *game_state)
 {
-    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
-    // AE_PRINT_MESH(proj_cube);
+    ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
 
+    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
+    
     free(game_state->scene.proj_cube.elements);
 }
 

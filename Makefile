@@ -8,8 +8,8 @@ build_main: ./src/main.c
 	gcc ./src/main.c $(CFLAGS) -o ./build/main
 
 run_main:
-	./build/main
 	@echo
+	./build/main
 
 clean_main:
 	@echo
@@ -23,9 +23,13 @@ debug_build_main: ./src/main.c
 
 profile_main: profile_build_main
 	./build/main
-	gprof ./build/main
 	@echo
-	rm gmon.out
+	gprof ./build/main gmon.out | /home/almog/.local/bin/gprof2dot | dot -Tpng -Gdpi=200 -o output.png
+	imview ./output.png
+	# xdg-open ./output.png
+	@echo
+	rm ./gmon.out ./output.png 
+	make clean_main
 
 profile_build_main: ./src/main.c
 	gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
@@ -41,8 +45,8 @@ build_temp: ./src/temp.c
 	gcc ./src/temp.c $(CFLAGS) -o ./build/temp
 
 run_temp:
-	./build/temp
 	@echo
+	./build/temp
 
 clean_temp:
 	@echo
@@ -65,4 +69,38 @@ profile_build_temp: ./src/temp.c
 	gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp
 
 # valgrind -s --leak-check=full ./temp
+# cloc --exclude-lang=JSON,make .
+
+#############################################################
+Aobj2c: build_Aobj2c run_Aobj2c clean_Aobj2c  
+	@echo ./build/Aobj2c done
+
+build_Aobj2c: ./src/Aobj2c.c
+	gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c
+
+run_Aobj2c:
+	@echo
+	@cat input.txt | ./build/Aobj2c
+
+clean_Aobj2c:
+	@echo
+	rm ./build/Aobj2c
+
+debug_build_Aobj2c: ./src/Aobj2c.c
+	@gcc ./src/Aobj2c.c $(CFLAGS) -g -o ./build/Aobj2c
+
+profile_Aobj2c: profile_build_Aobj2c
+	./build/Aobj2c
+	@echo
+	gprof ./build/Aobj2c gmon.out | /home/almog/.local/bin/gprof2dot | dot -Tpng -Gdpi=200 -o output.png
+	imview ./output.png
+	# xdg-open ./output.png
+	@echo
+	rm ./gmon.out ./output.png 
+	make clean_Aobj2c
+
+profile_build_Aobj2c: ./src/Aobj2c.c
+	gcc ./src/Aobj2c.c $(CFLAGS) -p -ggdb -o ./build/Aobj2c
+
+# valgrind -s --leak-check=full ./Aobj2c
 # cloc --exclude-lang=JSON,make .
