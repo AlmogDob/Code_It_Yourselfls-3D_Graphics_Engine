@@ -72,15 +72,25 @@ profile_build_temp: ./src/temp.c
 # cloc --exclude-lang=JSON,make .
 
 #############################################################
-Aobj2c: build_Aobj2c run_Aobj2c clean_Aobj2c  
+video_ship: build_Aobj2c
+	@echo
+	@cat ./obj_files/video_ship.obj | ./build/Aobj2c > ./build/video_ship.c
+	@echo
+	rm ./build/Aobj2c
+	@echo ./build/Aobj2c done
+
+Aobj2c: build_Aobj2c
+	@echo
+	@cat input.txt | ./build/Aobj2c 
+	@echo
+	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
 
 build_Aobj2c: ./src/Aobj2c.c
 	gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c
 
 run_Aobj2c:
-	@echo
-	@cat input.txt | ./build/Aobj2c
+	./build/Aobj2c
 
 clean_Aobj2c:
 	@echo

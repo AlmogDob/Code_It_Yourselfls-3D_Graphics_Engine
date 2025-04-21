@@ -73,12 +73,9 @@ int asm_get_next_word_from_line(char *dst, char *src, char seperator)
                         j++;
     }
 
-    if ((c == ' ' ||
-        c == ';' ||
-        c == ':' ||
-        c == ',' ||
-        c == '\n'||
-        c == '\0') && i == 0) {
+    if ((c == seperator || 
+         c == '\n'||
+         c == '\0') && i == 0) {
             dst[j++] = c;
             i++;
     }

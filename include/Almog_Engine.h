@@ -9,7 +9,12 @@
 #define AE_ASSERT assert
 #endif
 
+#include <math.h>
 #include <stdbool.h>
+
+#ifndef PI
+#define PI M_PI
+#endif
 
 typedef struct {
     float x;
@@ -29,6 +34,11 @@ typedef struct {
 } Mesh; /* Tri ada array */
 
 typedef struct {
+    size_t length;
+    Tri *elements;
+} Mesh_static;
+
+typedef struct {
     Mat2D position;
     Mat2D direction;
     float z_near;
@@ -40,21 +50,20 @@ typedef struct {
 typedef struct {
     Mesh cube;
     Mesh proj_cube;
+    Mesh_static mesh;
     Camera camera;
     Mat2D light_direction;
     Mat2D proj_mat;
 } Scene;
 
-#define AE_PRINT_TRI(tri) ae_print_tri(tri, #tri, 0)
-#define AE_PRINT_MESH(mesh) ae_print_mesh(mesh, #mesh, 0)
-
 Tri ae_create_tri(Point p1, Point p2, Point p3);
-Mesh ae_create_copy_of_mesh(Mesh mesh);
+Mesh ae_create_copy_of_mesh(Tri *mesh, size_t len);
 Mesh ae_create_cube(const size_t len);
 void ae_point_to_mat2D(Point p, Mat2D m);
 
 void ae_print_tri(Tri tri, char *name, size_t padding);
 void ae_print_mesh(Mesh mesh, char *name, size_t padding);
+void ae_print_mesh_static(Mesh_static mesh, char *name, size_t padding);
 
 void ae_calc_normal_to_tri(Mat2D normal, Tri tri);
 void ae_translate_mesh(Mesh mesh, float x, float y, float z);
@@ -70,6 +79,10 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int wi
 #ifdef ALMOG_ENGINE_IMPLEMENTATION
 #undef ALMOG_ENGINE_IMPLEMENTATION
 
+#define AE_PRINT_TRI(tri) ae_print_tri(tri, #tri, 0)
+#define AE_PRINT_MESH(mesh) ae_print_mesh(mesh, #mesh, 0)
+#define AE_PRINT_MESH_STATIC(mesh) ae_print_mesh_static(mesh, #mesh, 0)
+
 Tri ae_create_tri(Point p1, Point p2, Point p3)
 {
     Tri tri;
@@ -81,12 +94,12 @@ Tri ae_create_tri(Point p1, Point p2, Point p3)
     return tri;
 }
 
-Mesh ae_create_copy_of_mesh(Mesh mesh)
+Mesh ae_create_copy_of_mesh(Tri *mesh, size_t len)
 {
     Mesh des;
     ada_init_array(Tri, des);
-    for (size_t i = 0; i < mesh.length; i++) {
-        ada_appand(Tri, des, mesh.elements[i]);
+    for (size_t i = 0; i < len; i++) {
+        ada_appand(Tri, des, mesh[i]);
     }
 
     return des;
@@ -307,6 +320,16 @@ void ae_print_tri(Tri tri, char *name, size_t padding)
 }
 
 void ae_print_mesh(Mesh mesh, char *name, size_t padding)
+{
+    char tri_name[256];
+    printf("%*s%s:\n", (int) padding, "", name);
+    for (size_t i = 0; i < mesh.length; i++) {
+        snprintf(tri_name, 256, "tri %zu", i);
+        ae_print_tri(mesh.elements[i], tri_name, 4);
+    }
+}
+
+void ae_print_mesh_static(Mesh_static mesh, char *name, size_t padding)
 {
     char tri_name[256];
     printf("%*s%s:\n", (int) padding, "", name);

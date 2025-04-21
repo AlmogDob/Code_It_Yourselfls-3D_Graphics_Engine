@@ -272,6 +272,7 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t 
     float w = edge_cross_point(p0, p1, p1, p2);
     if (!w) {
         ars_draw_tri(screen_mat, tri, color);
+        return;
     }
     MATRIX2D_ASSERT(w != 0 && "triangle has area");
 
