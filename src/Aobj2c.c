@@ -42,6 +42,7 @@ int main()
 {
     /* parsing data from stdin */
     char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE];
+    char file_name[MAX_LEN_LINE];
 
     Points points;
     ada_init_array(Point, points);
@@ -50,8 +51,26 @@ int main()
 
     int line_len;
     while ((line_len = asm_get_line(stdin, current_line)) != -1) {
-        // printf("current line: %s\n", current_line);
         asm_get_next_word_from_line(current_word, current_line, ' ');
+        if (!strncmp(current_word, "#", 1)) {
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            // printf("current word: %s\n", current_word);
+            if (!strcmp(current_word, "Blender")) {
+                asm_get_word_and_cut(current_word, current_line, '\'');
+                asm_get_word_and_cut(current_word, current_line, '\'');
+                asm_get_word_and_cut(current_word, current_line, '.');
+                strcpy(file_name, current_word);
+            }
+        }
+        if (!strncmp(current_word, "'", 1)) {
+            asm_get_word_and_cut(current_word, current_line, '\'');
+            asm_get_word_and_cut(current_word, current_line, '.');
+            // printf("current word: %s\n", current_word);
+            // printf("current line: %s\n", current_line);
+            // exit(1);
+            strcpy(file_name, current_word);
+        }
         if (!strncmp(current_word, "v", 1)) {
             Point p;
             asm_get_word_and_cut(current_word, current_line, ' ');
@@ -78,7 +97,8 @@ int main()
             tri.to_draw = true;
 
             if (temp != 1) {
-                printf("%s:%d: [Warning] there are more then three vertices in each face\n", __FILE__, __LINE__);
+                fprintf(stderr, "%s:%d: [Warning] there are more then three vertices in each face\n", __FILE__, __LINE__);
+                exit(1);
             }
 
             ada_appand(Tri, mesh, tri);
@@ -92,14 +112,19 @@ int main()
     // print_points(points);
     // AE_PRINT_MESH(mesh);
 
+    if (asm_length(file_name) == 0) {
+        fprintf(stderr, "%s:%d: [Error] could not find file name in the file\n", __FILE__, __LINE__);
+        exit(1);
+    }
+
     /* outputing data to stdout */
-    printf("Mesh_static mesh;\nmesh.length = %zu;\nTri temp_tri_vec[] = {", mesh.length);
+    printf("Mesh_static %s;\n%s.length = %zu;\nTri temp_tri_vec[] = {", file_name, file_name, mesh.length);
         for (size_t i = 0; i < mesh.length; i++) {
             printf("{{");
             printf("{%f", mesh.elements[i].points[0].x);
             printf(", %f", mesh.elements[i].points[0].y);
             printf(", %f}", mesh.elements[i].points[0].z);
-            for (size_t j = 0; j < 2; j++) {
+            for (size_t j = 1; j < 3; j++) {
                 printf(", {%f", mesh.elements[i].points[j].x);
                 printf(", %f", mesh.elements[i].points[j].y);
                 printf(", %f}", mesh.elements[i].points[j].z);
@@ -107,7 +132,7 @@ int main()
             printf("}, 1},\n");
         }
     printf("};\n");
-    printf("mesh.elements = temp_tri_vec;\n");
+    printf("%s.elements = temp_tri_vec;\n", file_name);
 
 
     free(points.elements);

@@ -50,7 +50,7 @@ typedef struct {
 typedef struct {
     Mesh cube;
     Mesh proj_cube;
-    Mesh_static mesh;
+    Mesh mesh;
     Camera camera;
     Mat2D light_direction;
     Mat2D proj_mat;

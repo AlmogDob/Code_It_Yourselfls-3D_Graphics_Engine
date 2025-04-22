@@ -31,7 +31,7 @@ void update(game_state_t *game_state)
 {
     theta += 50 * game_state->delta_time;
 
-    temp_cube = ae_create_copy_of_mesh(game_state->scene.cube);
+    temp_cube = ae_create_copy_of_mesh(game_state->scene.cube.elements, game_state->scene.cube.length);
 
     ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, theta * 0.3, theta);
     ae_translate_mesh(temp_cube, 0, 0, 2.5);

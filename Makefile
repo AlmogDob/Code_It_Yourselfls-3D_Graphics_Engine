@@ -52,8 +52,11 @@ clean_temp:
 	@echo
 	rm ./build/temp
 
+debug_temp: debug_build_temp
+	gdb ./build/temp
+
 debug_build_temp: ./src/temp.c
-	@gcc ./src/temp.c $(CFLAGS) -g -o ./build/temp
+	@gcc ./src/temp.c $(CFLAGS) -ggdb -o ./build/temp
 
 profile_temp: profile_build_temp
 	./build/temp
@@ -74,7 +77,21 @@ profile_build_temp: ./src/temp.c
 #############################################################
 video_ship: build_Aobj2c
 	@echo
-	@cat ./obj_files/video_ship.obj | ./build/Aobj2c > ./build/video_ship.c
+	cat ./obj_files/video_ship.obj | ./build/Aobj2c > ./build/video_ship.c
+	@echo
+	rm ./build/Aobj2c
+	@echo ./build/Aobj2c done
+
+axis: build_Aobj2c
+	@echo
+	cat ./obj_files/axis.obj | ./build/Aobj2c > ./build/axis.c
+	@echo
+	rm ./build/Aobj2c
+	@echo ./build/Aobj2c done
+
+teapot: build_Aobj2c
+	@echo
+	cat ./obj_files/teapot.obj | ./build/Aobj2c > ./build/teapot.c
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
