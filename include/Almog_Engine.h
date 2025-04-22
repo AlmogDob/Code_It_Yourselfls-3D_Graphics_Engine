@@ -25,6 +25,7 @@ typedef struct {
 typedef struct {
     Point points[3];
     bool to_draw;
+    float light_intensity;
 } Tri;
 
 typedef struct {
@@ -71,8 +72,8 @@ void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi);
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Scene *scene);
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Scene *scene);
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
+Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 
 #endif /* ALMOG_ENGINE_H_ */
 
@@ -471,11 +472,12 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
     return des;
 }
 
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Scene *scene)
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
     Mat2D tri_normal = mat2D_alloc(3, 1);
     Mat2D temp_camera2tri = mat2D_alloc(3, 1);
     Mat2D camera2tri = mat2D_alloc(1, 3);
+    Mat2D light_directio_traspose = mat2D_alloc(1, 3);
     Mat2D dot_product = mat2D_alloc(1, 1);
     // mat2D_fill(dot_product, 0);
     Tri des_tri;
@@ -484,9 +486,15 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     ae_point_to_mat2D(tri.points[0], temp_camera2tri);
     mat2D_sub(temp_camera2tri, scene->camera.position);
     mat2D_transpose(camera2tri, temp_camera2tri);
+    mat2D_transpose(light_directio_traspose, light_direction);
+
+    mat2D_dot(dot_product, light_directio_traspose, tri_normal);
+    des_tri.light_intensity = MAT2D_AT(dot_product, 0, 0);
+    if (des_tri.light_intensity < 0) {
+        des_tri.light_intensity = 0;
+    }
 
     mat2D_dot(dot_product, camera2tri, tri_normal);
-
     if (MAT2D_AT(dot_product, 0, 0) < 0) {
         des_tri.to_draw = true;
     } else {
@@ -505,11 +513,15 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     }
 
     mat2D_free(tri_normal);
+    mat2D_free(temp_camera2tri);
+    mat2D_free(camera2tri);
+    mat2D_free(light_directio_traspose);
+    mat2D_free(dot_product);
 
     return des_tri;
 }
 
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Scene *scene)
+Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
     Mesh des;
 
@@ -517,7 +529,7 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int wi
 
     for (size_t i = 0; i < src.length; i++) {
         Tri temp_tri;
-        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], window_w, window_h, scene);
+        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], window_w, window_h, light_direction, scene);
         // AE_PRINT_TRI(temp_tri);
         
         ada_appand(Tri, des, temp_tri);

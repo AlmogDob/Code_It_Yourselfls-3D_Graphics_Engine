@@ -20,7 +20,7 @@ void ars_fill_circle(Mat2D_uint32 screen_mat, float center_x, float center_y, fl
 
 void ars_draw_tri(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
 void ars_fill_tri_scanline_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
-void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
+void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
 void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
 void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
 
@@ -260,7 +260,7 @@ void ars_fill_tri_scanline_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t
 }
 
 /* This function is the function for rasterization */
-void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color)
+void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity)
 {
     /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
 
@@ -298,7 +298,12 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t 
             float w2 = edge_cross_point(p2, p0, p2, p) + bias2;
 
             if (w0 * w >= 0 && w1 * w >= 0 &&  w2 * w >= 0) {
-                ars_draw_point(screen_mat, x, y, color);
+                HexARGB_RGBA_VAR(color);
+                r *= light_intensity;
+                g *= light_intensity;
+                b *= light_intensity;
+                (void)a;
+                ars_draw_point(screen_mat, x, y, RGB_hexRGB(r, g, b));
             }
         }
     }
@@ -474,7 +479,7 @@ void ars_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, int co
             color = rand_double() * 0xFFFFFF;
         }
         if (tri.to_draw) {
-            ars_fill_tri_Pinedas_rasterizer(screen_mat, tri, color);
+            ars_fill_tri_Pinedas_rasterizer(screen_mat, tri, color, tri.light_intensity);
         }
     }
 }

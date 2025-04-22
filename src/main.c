@@ -36,7 +36,7 @@ void update(game_state_t *game_state)
     ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, theta * 0.3, theta);
     ae_translate_mesh(temp_cube, 0, 0, 2.5);
 
-    game_state->scene.proj_cube = ae_project_mesh_world2screen(game_state->scene.proj_mat, temp_cube, game_state->window_w, game_state->window_h, &(game_state->scene));
+    game_state->scene.proj_cube = ae_project_mesh_world2screen(game_state->scene.proj_mat, temp_cube, game_state->window_w, game_state->window_h, game_state->scene.light_direction, &(game_state->scene));
 
     free(temp_cube.elements);
 }

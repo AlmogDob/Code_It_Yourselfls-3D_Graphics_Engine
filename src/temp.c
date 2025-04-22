@@ -18,16 +18,12 @@ void setup(game_state_t *game_state)
     theta = 0;  
 
     {
-    #include "./../build/video_ship.c"
-    game_state->scene.mesh = ae_create_copy_of_mesh(video_ship.elements, video_ship.length);
-    }
-    {
     // #include "./../build/axis.c"
     // game_state->scene.mesh = ae_create_copy_of_mesh(axis.elements, axis.length);
     }
     {
-    // #include "./../build/teapot.c"
-    // game_state->scene.mesh = ae_create_copy_of_mesh(teapot.elements, teapot.length);
+    #include "./../build/teapot.c"
+    game_state->scene.mesh = ae_create_copy_of_mesh(teapot.elements, teapot.length);
     }
 
     game_state->scene.cube = ae_create_cube(1);
@@ -44,9 +40,10 @@ void update(game_state_t *game_state)
     // temp_cube = ae_create_copy_of_mesh(game_state->scene.cube.elements, game_state->scene.cube.length);
 
     ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, theta * 0.3, theta);
-    ae_translate_mesh(temp_cube, 0, 0, 5);
+    // ae_translate_mesh(temp_cube, 0, 0, 2);
+    ae_translate_mesh(temp_cube, 0, 0, 6);
 
-    game_state->scene.proj_cube = ae_project_mesh_world2screen(game_state->scene.proj_mat, temp_cube, game_state->window_w, game_state->window_h, &(game_state->scene));
+    game_state->scene.proj_cube = ae_project_mesh_world2screen(game_state->scene.proj_mat, temp_cube, game_state->window_w, game_state->window_h, game_state->scene.light_direction, &(game_state->scene));
 
     // AE_PRINT_MESH(game_state->scene.proj_cube);
     // exit(1);
@@ -56,8 +53,8 @@ void update(game_state_t *game_state)
 
 void render(game_state_t *game_state)
 {
-    // ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
-    ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, -1);
+    ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
+    // ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, -1);
 
     // ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
     

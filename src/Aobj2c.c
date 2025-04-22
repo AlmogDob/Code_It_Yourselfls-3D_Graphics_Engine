@@ -91,12 +91,14 @@ int main()
             tri.points[0] = points.elements[atoi(current_word)-1];
             asm_get_word_and_cut(current_word, current_line, ' ');
             tri.points[1] = points.elements[atoi(current_word)-1];
-            int temp = asm_get_word_and_cut(current_word, current_line, ' ');
+            asm_get_word_and_cut(current_word, current_line, ' ');
             tri.points[2] = points.elements[atoi(current_word)-1];
 
             tri.to_draw = true;
+            tri.light_intensity = 1;
 
-            if (temp != 1) {
+            if (asm_length(current_line) != 0) {
+                /* TODO: add support for obj with quad faces */
                 fprintf(stderr, "%s:%d: [Warning] there are more then three vertices in each face\n", __FILE__, __LINE__);
                 exit(1);
             }
@@ -129,7 +131,7 @@ int main()
                 printf(", %f", mesh.elements[i].points[j].y);
                 printf(", %f}", mesh.elements[i].points[j].z);
             }
-            printf("}, 1},\n");
+            printf("}, 1, 1},\n");
         }
     printf("};\n");
     printf("%s.elements = temp_tri_vec;\n", file_name);
