@@ -96,8 +96,13 @@ int main()
 
             tri.to_draw = true;
             tri.light_intensity = 1;
+            tri.center.x = (tri.points[0].x + tri.points[1].x + tri.points[2].x) / 3;
+            tri.center.y = (tri.points[0].y + tri.points[1].y + tri.points[2].y) / 3;
+            tri.center.z = (tri.points[0].z + tri.points[1].z + tri.points[2].z) / 3;
+            tri.z_min = fmin(tri.points[0].z, fmin(tri.points[1].z, tri.points[2].z));
+            tri.z_max = fmax(tri.points[0].z, fmax(tri.points[1].z, tri.points[2].z));
 
-            if (asm_length(current_line) != 0) {
+            if ((line_len = asm_length(current_line)) != 0) {
                 /* TODO: add support for obj with quad faces */
                 fprintf(stderr, "%s:%d: [Warning] there are more then three vertices in each face\n", __FILE__, __LINE__);
                 exit(1);
@@ -131,7 +136,11 @@ int main()
                 printf(", %f", mesh.elements[i].points[j].y);
                 printf(", %f}", mesh.elements[i].points[j].z);
             }
-            printf("}, 1, 1},\n");
+            printf("}, ");
+            printf("{%f", mesh.elements[i].center.x);
+            printf(", %f", mesh.elements[i].center.y);
+            printf(", %f}", mesh.elements[i].center.z);
+            printf(", %f, %f, 1, 1},\n", mesh.elements[i].z_min, mesh.elements[i].z_max);
         }
     printf("};\n");
     printf("%s.elements = temp_tri_vec;\n", file_name);

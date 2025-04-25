@@ -1,8 +1,4 @@
-# Exported from 3D Builder
-mtllib simple_shape.mtl
-
-o Object.1
-
+'simple_shape.obj'
 v -94.999985 -47.444271 4.940000
 
 v -94.999985 2.563730 26.220001

@@ -24,6 +24,9 @@ typedef struct {
 
 typedef struct {
     Point points[3];
+    Point center;
+    float z_min;
+    float z_max;
     bool to_draw;
     float light_intensity;
 } Tri;
@@ -517,6 +520,12 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     mat2D_free(camera2tri);
     mat2D_free(light_directio_traspose);
     mat2D_free(dot_product);
+
+    des_tri.center.x = (des_tri.points[0].x + des_tri.points[1].x + des_tri.points[2].x) / 3;
+    des_tri.center.y = (des_tri.points[0].y + des_tri.points[1].y + des_tri.points[2].y) / 3;
+    des_tri.center.z = (des_tri.points[0].z + des_tri.points[1].z + des_tri.points[2].z) / 3;
+    des_tri.z_min = fmin(des_tri.points[0].z, fmin(des_tri.points[1].z, des_tri.points[2].z));
+    des_tri.z_max = fmax(des_tri.points[0].z, fmax(des_tri.points[1].z, des_tri.points[2].z));
 
     return des_tri;
 }

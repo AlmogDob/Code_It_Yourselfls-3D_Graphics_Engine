@@ -1,24 +1,38 @@
 CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
 CCHECKS = -fsanitize=address
+LIST_OBJ_C_FILE = ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
+LIST_OBJ_FILE = ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
+BUILD_OBJ_FILES = gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c; \
+	cat ./obj_files/axis.obj | ./build/Aobj2c > ./build/axis.c; \
+	cat ./obj_files/teapot.obj | ./build/Aobj2c > ./build/teapot.c; \
+	cat ./obj_files/simple_shape/simple_shape.obj | ./build/Aobj2c > ./build/simple_shape.c; \
+	cat ./obj_files/lego_man/LEGO_Man.obj | ./build/Aobj2c > ./build/LEGO_Man.c
 
 main: build_main run_main clean_main  
 	@echo ./build/main done
 
-build_main: ./src/main.c
-	gcc ./src/main.c $(CFLAGS) -o ./build/main
+build_main: ./src/main.c $(LIST_OBJ_FILE)
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@echo [Info] building temp
+	@gcc ./src/main.c $(CFLAGS) -o ./build/main
 
 run_main:
 	@echo
 	./build/main
+	@echo
 
 clean_main:
-	@echo
-	rm ./build/main
+	@echo [Info] removing all build files
+	@rm ./build/Aobj2c ./build/main $(LIST_OBJ_C_FILE)
 
 debug_main: debug_build_main
 	gdb ./build/main
 
 debug_build_main: ./src/main.c
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@echo [Info] building main
 	gcc ./src/main.c $(CFLAGS) -ggdb -o ./build/main
 
 profile_main: profile_build_main
@@ -31,8 +45,11 @@ profile_main: profile_build_main
 	rm ./gmon.out ./output.png 
 	make clean_main
 
-profile_build_main: ./src/main.c
-	gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
+profile_build_main: ./src/main.c $(LIST_OBJ_FILE)
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@echo [Info] building main
+	@gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
 
 # valgrind -s --leak-check=full ./main
 # cloc --exclude-lang=JSON,make .
@@ -41,21 +58,28 @@ profile_build_main: ./src/main.c
 temp: build_temp run_temp clean_temp  
 	@echo ./build/temp done
 
-build_temp: ./src/temp.c
-	gcc ./src/temp.c $(CFLAGS) -o ./build/temp
+build_temp: ./src/temp.c $(LIST_OBJ_FILE)
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@echo [Info] building temp
+	@gcc ./src/temp.c $(CFLAGS) -o ./build/temp
 
 run_temp:
 	@echo
 	./build/temp
+	@echo
 
 clean_temp:
-	@echo
-	rm ./build/temp
+	@echo [Info] removing all build files
+	@rm ./build/Aobj2c ./build/temp $(LIST_OBJ_C_FILE) 
 
 debug_temp: debug_build_temp
 	gdb ./build/temp
 
 debug_build_temp: ./src/temp.c
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@echo [Info] building temp
 	@gcc ./src/temp.c $(CFLAGS) -ggdb -o ./build/temp
 
 profile_temp: profile_build_temp
@@ -68,16 +92,31 @@ profile_temp: profile_build_temp
 	rm ./gmon.out ./output.png 
 	make clean_temp
 
-profile_build_temp: ./src/temp.c
-	gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp
+profile_build_temp: ./src/temp.c $(LIST_OBJ_FILE)
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@echo [Info] building temp
+	@gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp
 
 # valgrind -s --leak-check=full ./temp
 # cloc --exclude-lang=JSON,make .
 
 #############################################################
+build_obj_files: $(LIST_OBJ_FILE)
+	@echo [Info] building obj files
+	@$(BUILD_OBJ_FILES)
+	@rm ./build/Aobj2c
+
 video_ship: build_Aobj2c
 	@echo
 	cat ./obj_files/video_ship.obj | ./build/Aobj2c > ./build/video_ship.c
+	@echo
+	rm ./build/Aobj2c
+	@echo ./build/Aobj2c done
+
+skull: build_Aobj2c
+	@echo
+	cat ./obj_files/Skull/12140_Skull_v3_L2.obj | ./build/Aobj2c > ./build/skull.c
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
