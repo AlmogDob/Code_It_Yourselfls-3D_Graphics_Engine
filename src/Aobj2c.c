@@ -104,7 +104,7 @@ int main()
 
             if ((line_len = asm_length(current_line)) != 0) {
                 /* TODO: add support for obj with quad faces */
-                fprintf(stderr, "%s:%d: [Warning] there are more then three vertices in each face\n", __FILE__, __LINE__);
+                fprintf(stderr, "%s:%d: [Error] there are more then three vertices in each face\n", __FILE__, __LINE__);
                 exit(1);
             }
 

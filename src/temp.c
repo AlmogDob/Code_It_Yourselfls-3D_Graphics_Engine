@@ -65,20 +65,8 @@ void setup(game_state_t *game_state)
     theta = 0;  
 
     {
-    // #include "./../build/axis.c"
-    // game_state->scene.mesh = ae_create_copy_of_mesh(axis.elements, axis.length);
-    }
-    {
-    // #include "./../build/teapot.c"
-    // game_state->scene.mesh = ae_create_copy_of_mesh(teapot.elements, teapot.length);
-    }
-    {
-    // #include "./../build/simple_shape.c"
-    // game_state->scene.mesh = ae_create_copy_of_mesh(simple_shape.elements, simple_shape.length);
-    }
-    {
-    #include "./../build/LEGO_Man.c"
-    game_state->scene.mesh = ae_create_copy_of_mesh(LEGO_Man.elements, LEGO_Man.length);
+    #include "./../build/f16.c"
+    game_state->scene.mesh = ae_create_copy_of_mesh(f16.elements, f16.length);
     }
 
     game_state->scene.cube = ae_create_cube(1);
@@ -94,11 +82,11 @@ void update(game_state_t *game_state)
 
     // temp_cube = ae_create_copy_of_mesh(game_state->scene.cube.elements, game_state->scene.cube.length);
 
-    ae_rotate_mesh_Euler_xyz(temp_cube, 0.5 * theta, theta * 0.3, theta);
-    // ae_translate_mesh(temp_cube, 0, 0, 2);
-    // ae_translate_mesh(temp_cube, 0, 0, 6);
+    ae_rotate_mesh_Euler_xyz(temp_cube, 0, theta, theta * 0.3);
+    ae_translate_mesh(temp_cube, 0, 0, 2);
+    // ae_translate_mesh(temp_cube, 0, 0, 5);
     // ae_translate_mesh(temp_cube, 0, 0, 16);
-    ae_translate_mesh(temp_cube, 0, 0, 170);
+    // ae_translate_mesh(temp_cube, 0, 0, 170);
 
     game_state->scene.proj_cube = ae_project_mesh_world2screen(game_state->scene.proj_mat, temp_cube, game_state->window_w, game_state->window_h, game_state->scene.light_direction, &(game_state->scene));
 

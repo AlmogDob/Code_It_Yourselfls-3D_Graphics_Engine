@@ -1,9 +1,13 @@
 CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
 CCHECKS = -fsanitize=address
-LIST_OBJ_C_FILE = ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
-LIST_OBJ_FILE = ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
+LIST_OBJ_C_FILE = ./build/suzanne.c ./build/f16.c ./build/cruiser.c ./build/bunny.c ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
+LIST_OBJ_FILE = ./obj_files/suzanne/suzanne.obj ./obj_files/f16/f16.obj ./obj_files/cruiser/cruiser.obj ./obj_files/bunny.obj ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
 BUILD_OBJ_FILES = gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c; \
 	cat ./obj_files/axis.obj | ./build/Aobj2c > ./build/axis.c; \
+	cat ./obj_files/bunny.obj | ./build/Aobj2c > ./build/bunny.c; \
+	cat ./obj_files/f16/f16.obj | ./build/Aobj2c > ./build/f16.c; \
+	cat ./obj_files/suzanne/suzanne.obj | ./build/Aobj2c > ./build/suzanne.c; \
+	cat ./obj_files/cruiser/cruiser.obj | ./build/Aobj2c > ./build/cruiser.c; \
 	cat ./obj_files/teapot.obj | ./build/Aobj2c > ./build/teapot.c; \
 	cat ./obj_files/simple_shape/simple_shape.obj | ./build/Aobj2c > ./build/simple_shape.c; \
 	cat ./obj_files/lego_man/LEGO_Man.obj | ./build/Aobj2c > ./build/LEGO_Man.c
