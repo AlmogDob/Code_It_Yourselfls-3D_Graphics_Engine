@@ -19,6 +19,8 @@ int asm_length(char *str);
 int asm_get_next_word_from_line(char *dst, char *src, char seperator);
 void asm_copy_arry_by_indesies(char *target, int start, int end, char *src);
 int asm_get_word_and_cut(char *dst, char *src, char seperator);
+int asm_str_in_str(char *src, char *word2search);
+int asm_strncmp(const char *s1, const char *s2, const int N);
 
 #endif /*ALMOG_STRING_MANIPULATION_H_*/
 
@@ -113,6 +115,35 @@ int asm_get_word_and_cut(char *dst, char *src, char seperator)
     asm_copy_arry_by_indesies(src, last_pos, asm_length(src), src);
     return 1;
 }
+
+int asm_str_in_str(char *src, char *word2search)
+{
+    int i = 0, num_of_accur = 0;
+    while (src[i] != '\0') {
+        if (asm_strncmp(src+i, word2search, asm_length(word2search))) {
+            num_of_accur++;
+        }
+        i++;
+    }
+    return num_of_accur;
+}
+
+/* return 1 if equal, 0 if different */
+int asm_strncmp(const char *s1, const char *s2, const int N)
+{
+    int i = 0;
+    while (i < N) {
+        if (s1[i] == '\0' && s2[i] == '\0') {
+            break;
+        }
+        if (s1[i] != s2[i] || (s1[i] == '\0') || (s2[i] == '\0')) {
+            return 0;
+        }
+        i++;
+    }
+    return 1;
+}
+
 
 #endif /*ALMOG_STRING_MANIPULATION_IMPLEMENTATION*/
 

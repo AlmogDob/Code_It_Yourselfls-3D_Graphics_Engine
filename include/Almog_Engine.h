@@ -78,6 +78,10 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
 Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 
+void ae_swap_tri(Tri *v, int i, int j);
+bool ae_compare_tri(Tri t1, Tri t2);
+void ae_qsort_tri(Tri *v, int left, int right);
+
 #endif /* ALMOG_ENGINE_H_ */
 
 #ifdef ALMOG_ENGINE_IMPLEMENTATION
@@ -551,6 +555,51 @@ Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int wi
     return des;
 }
 
+/* swap: interchange v[i] and v[j] */
+void ae_swap_tri(Tri *v, int i, int j)
+{
+    Tri temp;
+
+    temp = v[i];
+    v[i] = v[j];
+    v[j] = temp;
+}
+
+bool ae_compare_tri(Tri t1, Tri t2)
+{
+    // int z_min_1 = fmin(t1.points[0].z, fmin(t1.points[1].z, t1.points[2].z));
+    // int z_min_2 = fmin(t2.points[0].z, fmin(t2.points[1].z, t2.points[2].z));
+
+    // return z_min_1 > z_min_2;
+
+    // int z_ave_1 = t1.points[0].z + t1.points[1].z + t1.points[2].z;
+    // int z_ave_2 = t2.points[0].z + t2.points[1].z + t2.points[2].z;
+
+    // return z_ave_1 > z_ave_2;
+
+    // return t1.center.z > t2.center.z;
+
+    // return t1.z_min > t2.z_min;
+
+    return t1.z_max > t2.z_max;
+}
+
+/* qsort: sort v[left]...v[right] int increasing order */
+void ae_qsort_tri(Tri *v, int left, int right)
+{
+    int i, last;
+
+    if (left >= right)                  /* do nothing if array contains */
+        return;                         /* fewer than two elements */
+    ae_swap_tri(v, left, (left + right) / 2);  /* move partition elem */
+    last = left;                        /* to v[0] */
+    for (i = left + 1; i <= right; i++) /* partition */
+        if (ae_compare_tri(v[i], v[left]))
+            ae_swap_tri(v, ++last, i);
+    ae_swap_tri(v, left, last); /* restore partition elem */
+    ae_qsort_tri(v, left, last - 1);
+    ae_qsort_tri(v, last + 1, right);
+}
 
 
 #endif /* ALMOG_ENGINE_IMPLEMENTATION */

@@ -1,16 +1,17 @@
 CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
 CCHECKS = -fsanitize=address
-LIST_OBJ_C_FILE = ./build/suzanne.c ./build/f16.c ./build/cruiser.c ./build/bunny.c ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
-LIST_OBJ_FILE = ./obj_files/suzanne/suzanne.obj ./obj_files/f16/f16.obj ./obj_files/cruiser/cruiser.obj ./obj_files/bunny.obj ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
+LIST_OBJ_C_FILE = ./build/Skull_v3_L2.c ./build/suzanne.c ./build/f16.c ./build/cruiser.c ./build/bunny.c ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
+LIST_OBJ_FILE = ./obj_files/Skull/Skull_v3_L2.obj ./obj_files/suzanne/suzanne.obj ./obj_files/f16/f16.obj ./obj_files/cruiser/cruiser.obj ./obj_files/bunny.obj ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
 BUILD_OBJ_FILES = gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c; \
-	cat ./obj_files/axis.obj | ./build/Aobj2c > ./build/axis.c; \
-	cat ./obj_files/bunny.obj | ./build/Aobj2c > ./build/bunny.c; \
-	cat ./obj_files/f16/f16.obj | ./build/Aobj2c > ./build/f16.c; \
-	cat ./obj_files/suzanne/suzanne.obj | ./build/Aobj2c > ./build/suzanne.c; \
-	cat ./obj_files/cruiser/cruiser.obj | ./build/Aobj2c > ./build/cruiser.c; \
-	cat ./obj_files/teapot.obj | ./build/Aobj2c > ./build/teapot.c; \
-	cat ./obj_files/simple_shape/simple_shape.obj | ./build/Aobj2c > ./build/simple_shape.c; \
-	cat ./obj_files/lego_man/LEGO_Man.obj | ./build/Aobj2c > ./build/LEGO_Man.c
+	./build/Aobj2c ./obj_files/axis.obj > ./build/axis.c; \
+	./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj > ./build/Skull_v3_L2.c; \
+	./build/Aobj2c ./obj_files/bunny.obj > ./build/bunny.c; \
+	./build/Aobj2c ./obj_files/f16/f16.obj > ./build/f16.c; \
+	./build/Aobj2c ./obj_files/suzanne/suzanne.obj > ./build/suzanne.c; \
+	./build/Aobj2c ./obj_files/cruiser/cruiser.obj > ./build/cruiser.c; \
+	./build/Aobj2c ./obj_files/teapot.obj > ./build/teapot.c; \
+	./build/Aobj2c ./obj_files/simple_shape/simple_shape.obj > ./build/simple_shape.c; \
+	./build/Aobj2c ./obj_files/lego_man/LEGO_Man.obj > ./build/LEGO_Man.c
 
 main: build_main run_main clean_main  
 	@echo ./build/main done
@@ -18,7 +19,7 @@ main: build_main run_main clean_main
 build_main: ./src/main.c $(LIST_OBJ_FILE)
 	@echo [Info] building obj files
 	@$(BUILD_OBJ_FILES)
-	@echo [Info] building temp
+	@echo [Info] building main
 	@gcc ./src/main.c $(CFLAGS) -o ./build/main
 
 run_main:
@@ -62,9 +63,7 @@ profile_build_main: ./src/main.c $(LIST_OBJ_FILE)
 temp: build_temp run_temp clean_temp  
 	@echo ./build/temp done
 
-build_temp: ./src/temp.c $(LIST_OBJ_FILE)
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
+build_temp: ./src/temp.c 
 	@echo [Info] building temp
 	@gcc ./src/temp.c $(CFLAGS) -o ./build/temp
 
@@ -75,7 +74,7 @@ run_temp:
 
 clean_temp:
 	@echo [Info] removing all build files
-	@rm ./build/Aobj2c ./build/temp $(LIST_OBJ_C_FILE) 
+	@rm ./build/temp
 
 debug_temp: debug_build_temp
 	gdb ./build/temp
@@ -113,28 +112,38 @@ build_obj_files: $(LIST_OBJ_FILE)
 
 video_ship: build_Aobj2c
 	@echo
-	cat ./obj_files/video_ship.obj | ./build/Aobj2c > ./build/video_ship.c
+	./build/Aobj2c ./obj_files/video_ship.obj > ./build/video_ship.c
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
 
 skull: build_Aobj2c
 	@echo
-	@./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj
+	@./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj > ./build/Skull_v3_L2.c
+	# @./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
 
 axis: build_Aobj2c
 	@echo
-	cat ./obj_files/axis.obj | ./build/Aobj2c > ./build/axis.c
+	# @./build/Aobj2c ./obj_files/axis.obj > ./build/axis.c
+	@./build/Aobj2c ./obj_files/axis.obj
+	@echo
+	rm ./build/Aobj2c
+	@echo ./build/Aobj2c done
+
+f16: build_Aobj2c
+	@echo
+	# @./build/Aobj2c ./obj_files/f16/f16.obj > ./build/f16.c
+	@./build/Aobj2c ./obj_files/f16/f16.obj
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
 
 teapot: build_Aobj2c
 	@echo
-	cat ./obj_files/teapot.obj | ./build/Aobj2c > ./build/teapot.c
+	./build/Aobj2c ./obj_files/teapot.obj > ./build/teapot.c
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
@@ -155,6 +164,9 @@ run_Aobj2c:
 clean_Aobj2c:
 	@echo
 	rm ./build/Aobj2c
+
+debug_Aobj2c: debug_build_Aobj2c
+	gdb ./build/Aobj2c
 
 debug_build_Aobj2c: ./src/Aobj2c.c
 	@gcc ./src/Aobj2c.c $(CFLAGS) -g -o ./build/Aobj2c
