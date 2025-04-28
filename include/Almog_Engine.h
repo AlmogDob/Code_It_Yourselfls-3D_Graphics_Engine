@@ -491,13 +491,17 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     mat2D_transpose(camera2tri, temp_camera2tri);
     mat2D_transpose(light_directio_traspose, light_direction);
 
-    mat2D_dot(dot_product, light_directio_traspose, tri_normal);
+    MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(light_directio_traspose, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(light_directio_traspose, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(light_directio_traspose, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
+    // mat2D_dot(dot_product, light_directio_traspose, tri_normal);
+
     des_tri.light_intensity = MAT2D_AT(dot_product, 0, 0);
     if (des_tri.light_intensity < 0) {
         des_tri.light_intensity = 0;
     }
 
-    mat2D_dot(dot_product, camera2tri, tri_normal);
+    MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(camera2tri, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(camera2tri, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(camera2tri, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
+    // mat2D_dot(dot_product, camera2tri, tri_normal);
+
     if (MAT2D_AT(dot_product, 0, 0) < 0) {
         des_tri.to_draw = true;
     } else {

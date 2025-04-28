@@ -38,19 +38,49 @@ void ae_print_mesh(Mesh mesh, char *name, size_t padding)
     }
 }
 
-int main()
+int main(int argc, char const *argv[])
 {
-    /* parsing data from stdin */
     char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE];
-    char file_name[MAX_LEN_LINE];
+    char file_name[MAX_LEN_LINE], file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE];
 
+    if (--argc != 1) {
+        fprintf(stderr, "%s:%d: [Error] not the right usage: ./Aobj2c 'file name'\n", __FILE__, __LINE__);
+        exit(1);
+    }
+    strncpy(file_name, *(++argv), MAX_LEN_LINE);
+    strncpy(file_extention, file_name, MAX_LEN_LINE);
+
+    /* check if file is an obj file*/
+    asm_get_word_and_cut(file_name, file_extention, '.');
+    asm_get_word_and_cut(file_name, file_extention, '.');
+    if (strncmp(file_extention, ".obj", MAX_LEN_LINE)) {
+        fprintf(stderr, "%s:%d: [Error] unsupported file format: '%s'\n", __FILE__, __LINE__, file_name);
+        exit(1);
+    }
+    strncpy(mesh_name, file_name, MAX_LEN_LINE);
+    while(asm_length(mesh_name)) {
+        asm_get_word_and_cut(current_word, mesh_name, '/');
+    }
+
+    strncpy(current_word, ".", MAX_LEN_LINE);
+    strncat(file_name, ".obj", MAX_LEN_LINE/2);
+    strncat(current_word, file_name, MAX_LEN_LINE/2);
+    printf("%s\n", current_word);
+
+    FILE *fp = fopen(current_word, "rt");
+    if (fp == NULL) {
+        fprintf(stderr, "%s:%d: [Error] failed to open file: %s\n", __FILE__, __LINE__, current_word);
+        exit(1);
+    }
+    /* parsing data from file */
     Points points;
     ada_init_array(Point, points);
     Mesh mesh;
     ada_init_array(Tri, mesh);
 
     int line_len;
-    while ((line_len = asm_get_line(stdin, current_line)) != -1) {
+
+    while ((line_len = asm_get_line(fp, current_line)) != -1) {
         asm_get_next_word_from_line(current_word, current_line, ' ');
         if (!strncmp(current_word, "#", 1)) {
             asm_get_word_and_cut(current_word, current_line, ' ');

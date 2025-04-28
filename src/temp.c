@@ -65,8 +65,12 @@ void setup(game_state_t *game_state)
     theta = 0;  
 
     {
-    #include "./../build/f16.c"
-    game_state->scene.mesh = ae_create_copy_of_mesh(f16.elements, f16.length);
+    // #include "./../build/f16.c"
+    // game_state->scene.mesh = ae_create_copy_of_mesh(f16.elements, f16.length);
+    }
+    {
+    #include "./../build/suzanne.c"
+    game_state->scene.mesh = ae_create_copy_of_mesh(suzanne.elements, suzanne.length);
     }
 
     game_state->scene.cube = ae_create_cube(1);
@@ -100,10 +104,10 @@ void update(game_state_t *game_state)
 
 void render(game_state_t *game_state)
 {
-    ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
+    // ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
     // ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, -1);
 
-    // ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
+    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
     
     free(game_state->scene.proj_cube.elements);
 }

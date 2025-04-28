@@ -215,14 +215,13 @@ void mat2D_rand(Mat2D m, double low, double high)
 void mat2D_dot(Mat2D dst, Mat2D a, Mat2D b)
 {
     MATRIX2D_ASSERT(a.cols == b.rows);
-    size_t n = a.cols;
     MATRIX2D_ASSERT(a.rows == dst.rows);
     MATRIX2D_ASSERT(b.cols == dst.cols);
 
     for (size_t i = 0; i < dst.rows; i++) {
         for (size_t j = 0; j < dst.cols; j++) {
             MAT2D_AT(dst, i, j) = 0;
-            for (size_t k = 0; k < n; k++) {
+            for (size_t k = 0; k < a.cols; k++) {
                 MAT2D_AT(dst, i, j) += MAT2D_AT(a, i, k)*MAT2D_AT(b, k, j);
             }
         }

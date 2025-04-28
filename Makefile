@@ -120,7 +120,7 @@ video_ship: build_Aobj2c
 
 skull: build_Aobj2c
 	@echo
-	cat ./obj_files/Skull/12140_Skull_v3_L2.obj | ./build/Aobj2c > ./build/skull.c
+	@./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj
 	@echo
 	rm ./build/Aobj2c
 	@echo ./build/Aobj2c done
