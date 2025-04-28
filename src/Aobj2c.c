@@ -168,7 +168,7 @@ int main(int argc, char const *argv[])
                     asm_get_word_and_cut(current_word, current_line, ' ');
                     tri1.points[2] = points.elements[atoi(current_word)-1];
                 }
-                if (number_of_backslash == 2) {
+                if (number_of_backslash == 2 || number_of_backslash == 1) {
                     if (!texture_warning_was_printed) {
                         fprintf(stderr, "%s:%d [Warning] texture and normals data ignored\n", __FILE__, __LINE__);
                         texture_warning_was_printed = 1;

@@ -29,8 +29,12 @@ void setup(game_state_t *game_state)
     game_state->scene.mesh = ae_create_copy_of_mesh(f16.elements, f16.length);
     }
     {
-    // #include "./../build/bunny.c"
-    // game_state->scene.mesh = ae_create_copy_of_mesh(bunny.elements, bunny.length);
+    // #include "./../build/test_file.c"
+    // game_state->scene.mesh = ae_create_copy_of_mesh(test_file.elements, test_file.length);
+    }
+    {
+    // #include "./../build/LEGO_Man.c"
+    // game_state->scene.mesh = ae_create_copy_of_mesh(LEGO_Man.elements, LEGO_Man.length);
     }
 
     game_state->scene.cube = ae_create_cube(1);
@@ -47,9 +51,9 @@ void update(game_state_t *game_state)
     // temp_cube = ae_create_copy_of_mesh(game_state->scene.cube.elements, game_state->scene.cube.length);
 
     ae_rotate_mesh_Euler_xyz(temp_cube, 0, theta, theta * 0.3);
-    // ae_translate_mesh(temp_cube, 0, 0, 2);
-    ae_translate_mesh(temp_cube, 0, 0, 5);
-    // ae_translate_mesh(temp_cube, 0, 0, 16);
+    ae_translate_mesh(temp_cube, 0, 0, 2);
+    // ae_translate_mesh(temp_cube, 0, 0, 5);
+    // ae_translate_mesh(temp_cube, 0, 0, 10);
     // ae_translate_mesh(temp_cube, 0, 0, 30);
     // ae_translate_mesh(temp_cube, 0, 0, 170);
 
@@ -68,7 +72,7 @@ void render(game_state_t *game_state)
     ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
     // ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, -1);
 
-    // ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
+    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
     
     free(game_state->scene.proj_cube.elements);
 }
