@@ -1,12 +1,22 @@
 #include <stdio.h>
-#define ALMOG_STRING_MANIPULATION_IMPLEMENTATION
+// #define ALMOG_STRING_MANIPULATION_IMPLEMENTATION
 #include "./../include/Almog_String_Manipulation.h"
+#define ALMOG_ENGINE_IMPLEMENTATION
+#include "./../include/Almog_Engine.h"
 
 int main()
 {
-    char src[] = " 1/1/1 2/2/2 3/3/3 4/4/4";
+    Mesh cube = ae_create_cube(2);
+    float xmax, xmin, ymax, ymin, zmax, zmin;
 
-    printf("\n%d\n", asm_str_in_str(src, " "));
+    ae_set_mesh_bounding_box(cube, &xmin, &xmax, &ymin, &ymax, &zmin, &zmax);
+
+    printf("xmin: %f, xmax: %f\nymin: %f, ymax: %f\nzmin: %f, zmax: %f\n\n", xmin, xmax, ymin, ymax, zmin, zmax);
+
+    ae_normalize_mesh(cube);
+
+    ae_set_mesh_bounding_box(cube, &xmin, &xmax, &ymin, &ymax, &zmin, &zmax);
+    printf("xmin: %f, xmax: %f\nymin: %f, ymax: %f\nzmin: %f, zmax: %f\n\n", xmin, xmax, ymin, ymax, zmin, zmax);
 
     return 0;
 }

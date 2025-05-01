@@ -3,17 +3,17 @@ CCHECKS = -fsanitize=address
 LIST_OBJ_C_FILE = ./build/test_file.c ./build/indoor_plant_02.c ./build/Skull_v3_L2.c ./build/suzanne.c ./build/f16.c ./build/cruiser.c ./build/bunny.c ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
 LIST_OBJ_FILE = ./obj_files/lego_man/test_file.obj ./obj_files/indoor_plant_02_obj/indoor_plant_02.obj ./obj_files/Skull/Skull_v3_L2.obj ./obj_files/suzanne/suzanne.obj ./obj_files/f16/f16.obj ./obj_files/cruiser/cruiser.obj ./obj_files/bunny.obj ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
 BUILD_OBJ_FILES = gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c; \
-	./build/Aobj2c ./obj_files/axis.obj > ./build/axis.c; \
-	./build/Aobj2c ./obj_files/indoor_plant_02_obj/indoor_plant_02.obj > ./build/indoor_plant_02.c; \
-	./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj > ./build/Skull_v3_L2.c; \
-	./build/Aobj2c ./obj_files/bunny.obj > ./build/bunny.c; \
-	./build/Aobj2c ./obj_files/f16/f16.obj > ./build/f16.c; \
-	./build/Aobj2c ./obj_files/suzanne/suzanne.obj > ./build/suzanne.c; \
-	./build/Aobj2c ./obj_files/cruiser/cruiser.obj > ./build/cruiser.c; \
-	./build/Aobj2c ./obj_files/teapot.obj > ./build/teapot.c; \
-	./build/Aobj2c ./obj_files/simple_shape/simple_shape.obj > ./build/simple_shape.c; \
-	./build/Aobj2c ./obj_files/lego_man/LEGO_Man.obj > ./build/LEGO_Man.c; \
-	./build/Aobj2c ./obj_files/lego_man/test_file.obj > ./build/test_file.c
+	./build/Aobj2c ./obj_files/axis.obj; \
+	./build/Aobj2c ./obj_files/indoor_plant_02_obj/indoor_plant_02.obj; \
+	./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj; \
+	./build/Aobj2c ./obj_files/bunny.obj; \
+	./build/Aobj2c ./obj_files/f16/f16.obj; \
+	./build/Aobj2c ./obj_files/suzanne/suzanne.obj; \
+	./build/Aobj2c ./obj_files/cruiser/cruiser.obj; \
+	./build/Aobj2c ./obj_files/teapot.obj; \
+	./build/Aobj2c ./obj_files/simple_shape/simple_shape.obj; \
+	./build/Aobj2c ./obj_files/lego_man/LEGO_Man.obj; \
+	./build/Aobj2c ./obj_files/lego_man/test_file.obj
 
 main: build_main run_main clean_main  
 	@echo ./build/main done
@@ -111,6 +111,10 @@ build_obj_files: $(LIST_OBJ_FILE)
 	@echo [Info] building obj files
 	@$(BUILD_OBJ_FILES)
 	@rm ./build/Aobj2c
+
+rm_obj_files: $(LIST_OBJ_FILE)
+	@echo [Info] rm obj files
+	@rm $(LIST_OBJ_C_FILE)
 
 video_ship: build_Aobj2c
 	@echo

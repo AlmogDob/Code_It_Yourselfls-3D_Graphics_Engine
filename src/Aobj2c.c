@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #define ALMOG_STRING_MANIPULATION_IMPLEMENTATION
 #include "./../include/Almog_String_Manipulation.h"
 #include "./../include/Almog_Engine.h"
@@ -41,7 +42,7 @@ void ae_print_mesh(Mesh mesh, char *name, size_t padding)
 int main(int argc, char const *argv[])
 {
     char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE], current_num_str[MAX_LEN_LINE];
-    char file_name[MAX_LEN_LINE], file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE];
+    char file_name[MAX_LEN_LINE], file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE], output_file_name[MAX_LEN_LINE];
     int texture_warning_was_printed = 0;
 
     if (--argc != 1) {
@@ -70,9 +71,18 @@ int main(int argc, char const *argv[])
     strncat(file_name, ".obj", MAX_LEN_LINE/2);
     strncat(current_word, file_name, MAX_LEN_LINE/2);
 
-    FILE *fp = fopen(current_word, "rt");
-    if (fp == NULL) {
-        fprintf(stderr, "%s:%d: [Error] failed to open file: %s\n", __FILE__, __LINE__, current_word);
+    FILE *fp_input = fopen(current_word, "rt");
+    if (fp_input == NULL) {
+        fprintf(stderr, "%s:%d: [Error] failed to open input file: '%s', %s\n", __FILE__, __LINE__, current_word, strerror(errno));
+        exit(1);
+    }
+
+    strncpy(output_file_name, "./build/", MAX_LEN_LINE);
+    strncat(output_file_name, mesh_name, MAX_LEN_LINE/2);
+    strncat(output_file_name, ".c", MAX_LEN_LINE/2);
+    FILE *fp_output = fopen(output_file_name, "wt");
+    if (fp_input == NULL) {
+        fprintf(stderr, "%s:%d: [Error] failed to open output file: '%s'. %s\n", __FILE__, __LINE__, output_file_name, strerror(errno));
         exit(1);
     }
 
@@ -84,7 +94,7 @@ int main(int argc, char const *argv[])
 
     int line_len;
 
-    while ((line_len = asm_get_line(fp, current_line)) != -1) {
+    while ((line_len = asm_get_line(fp_input, current_line)) != -1) {
         asm_get_next_word_from_line(current_word, current_line, ' ');
         if (!strncmp(current_word, "v", 1)) {
             Point p;
@@ -223,35 +233,37 @@ int main(int argc, char const *argv[])
     // print_points(points);
     // AE_PRINT_MESH(mesh);
 
-    if (asm_length(file_name) == 0) {
-        fprintf(stderr, "%s:%d: [Error] could not find file name in the file\n", __FILE__, __LINE__);
-        exit(1);
-    }
+    // if (asm_length(file_name) == 0) {
+    //     fprintf(stderr, "%s:%d: [Error] could not find file name in the file\n", __FILE__, __LINE__);
+    //     exit(1);
+    // }
 
     /* outputing data to stdout */
-    printf("Mesh_static %s;\n%s.length = %zu;\nTri temp_tri_vec[] = {", mesh_name, mesh_name, mesh.length);
+    fprintf(fp_output, "Mesh_static %s;\n%s.length = %zu;\nTri temp_tri_vec[] = {", mesh_name, mesh_name, mesh.length);
         for (size_t i = 0; i < mesh.length; i++) {
-            printf("{{");
-            printf("{%f", mesh.elements[i].points[0].x);
-            printf(", %f", mesh.elements[i].points[0].y);
-            printf(", %f}", mesh.elements[i].points[0].z);
+            fprintf(fp_output, "{{");
+            fprintf(fp_output, "{%f", mesh.elements[i].points[0].x);
+            fprintf(fp_output, ", %f", mesh.elements[i].points[0].y);
+            fprintf(fp_output, ", %f}", mesh.elements[i].points[0].z);
             for (size_t j = 1; j < 3; j++) {
-                printf(", {%f", mesh.elements[i].points[j].x);
-                printf(", %f", mesh.elements[i].points[j].y);
-                printf(", %f}", mesh.elements[i].points[j].z);
+                fprintf(fp_output, ", {%f", mesh.elements[i].points[j].x);
+                fprintf(fp_output, ", %f", mesh.elements[i].points[j].y);
+                fprintf(fp_output, ", %f}", mesh.elements[i].points[j].z);
             }
-            printf("}, ");
-            printf("{%f", mesh.elements[i].center.x);
-            printf(", %f", mesh.elements[i].center.y);
-            printf(", %f}", mesh.elements[i].center.z);
-            printf(", %f, %f, 1, 1},\n", mesh.elements[i].z_min, mesh.elements[i].z_max);
+            fprintf(fp_output, "}, ");
+            fprintf(fp_output, "{%f", mesh.elements[i].center.x);
+            fprintf(fp_output, ", %f", mesh.elements[i].center.y);
+            fprintf(fp_output, ", %f}", mesh.elements[i].center.z);
+            fprintf(fp_output, ", %f, %f, 1, 1},\n", mesh.elements[i].z_min, mesh.elements[i].z_max);
         }
-    printf("};\n");
-    printf("%s.elements = temp_tri_vec;\n", mesh_name);
+    fprintf(fp_output, "};\n");
+    fprintf(fp_output, "%s.elements = temp_tri_vec;\n", mesh_name);
 
 
     free(points.elements);
     free(mesh.elements);
+    fclose(fp_input);
+    fclose(fp_output);
 
     return 0;
 }

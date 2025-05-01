@@ -8,7 +8,6 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 #define UPDATE
 #define RENDER
 #include "./../include/display.c"
-#define MATRIX2D_IMPLEMENTATION
 #include "./../include/Matrix2D.h"
 #define ALMOG_RENDER_SHAPES_IMPLEMENTATION
 #include "./../include/Almog_Render_Shapes.h"
@@ -25,16 +24,19 @@ void setup(game_state_t *game_state)
     theta = 0;  
 
     {
-    #include "./../build/f16.c"
-    game_state->scene.mesh = ae_create_copy_of_mesh(f16.elements, f16.length);
+    // #include "./../build/f16.c"
+    // game_state->scene.mesh = ae_create_copy_of_mesh(f16.elements, f16.length);
+    // ae_normalize_mesh(game_state->scene.mesh);
     }
     {
-    // #include "./../build/test_file.c"
-    // game_state->scene.mesh = ae_create_copy_of_mesh(test_file.elements, test_file.length);
+    #include "./../build/bunny.c"
+    game_state->scene.mesh = ae_create_copy_of_mesh(bunny.elements, bunny.length);
+    ae_normalize_mesh(game_state->scene.mesh);
     }
     {
     // #include "./../build/LEGO_Man.c"
     // game_state->scene.mesh = ae_create_copy_of_mesh(LEGO_Man.elements, LEGO_Man.length);
+    // ae_normalize_mesh(game_state->scene.mesh);
     }
 
     game_state->scene.cube = ae_create_cube(1);
@@ -72,7 +74,7 @@ void render(game_state_t *game_state)
     ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, 0xFFFFFF);
     // ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.proj_cube, -1);
 
-    ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
+    // ars_draw_mesh(game_state->window_pixels_mat, game_state->scene.proj_cube, 0x0000FF);
     
     free(game_state->scene.proj_cube.elements);
 }

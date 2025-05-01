@@ -2,6 +2,10 @@
 #define ALMOG_ENGINE_H_
 
 #include "./../include/Almog_Dynamic_Array.h"
+
+#ifndef MATRIX2D_IMPLEMENTATION
+#define MATRIX2D_IMPLEMENTATION
+#endif
 #include "./../include/Matrix2D.h"
 
 #ifndef AE_ASSERT
@@ -11,6 +15,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <float.h>
 
 #ifndef PI
 #define PI M_PI
@@ -72,6 +77,9 @@ void ae_print_mesh_static(Mesh_static mesh, char *name, size_t padding);
 void ae_calc_normal_to_tri(Mat2D normal, Tri tri);
 void ae_translate_mesh(Mesh mesh, float x, float y, float z);
 void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi);
+void ae_set_mesh_bounding_box(Mesh mesh, float *x_min, float *x_max, float *y_min, float *y_max, float *z_min, float *z_max);
+void ae_set_tri_center_zmin_zmax(Tri *tri);
+void ae_normalize_mesh(Mesh mesh);
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
@@ -431,6 +439,77 @@ void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi)
     mat2D_free(des_point_mat);
 }
 
+void ae_set_mesh_bounding_box(Mesh mesh, float *x_min, float *x_max, float *y_min, float *y_max, float *z_min, float *z_max)
+{
+    float xmin = FLT_MAX, xmax = FLT_MIN;
+    float ymin = FLT_MAX, ymax = FLT_MIN;
+    float zmin = FLT_MAX, zmax = FLT_MIN;
+
+    float x, y, z;
+
+    for (size_t t = 0; t < mesh.length; t++) {
+        for (size_t p = 0; p < 3; p++) {
+            x = mesh.elements[t].points[p].x;
+            y = mesh.elements[t].points[p].y;
+            z = mesh.elements[t].points[p].z;
+            if (x > xmax) xmax = x;
+            if (x < xmin) xmin = x;
+            if (y > ymax) ymax = y;
+            if (y < ymin) ymin = y;
+            if (z > zmax) zmax = z;
+            if (z < zmin) zmin = z;
+        }
+    }
+    *x_min = xmin;
+    *x_max = xmax; 
+    *y_min = ymin;
+    *y_max = ymax;
+    *z_min = zmin;
+    *z_max = zmax;
+}
+
+void ae_set_tri_center_zmin_zmax(Tri *tri)
+{
+    tri->center.x = (tri->points[0].x + tri->points[1].x + tri->points[2].x) / 3;
+    tri->center.y = (tri->points[0].y + tri->points[1].y + tri->points[2].y) / 3;
+    tri->center.z = (tri->points[0].z + tri->points[1].z + tri->points[2].z) / 3;
+    tri->z_min = fmin(tri->points[0].z, fmin(tri->points[1].z, tri->points[2].z));
+    tri->z_max = fmax(tri->points[0].z, fmax(tri->points[1].z, tri->points[2].z));
+}
+
+void ae_normalize_mesh(Mesh mesh)
+{
+    float xmax, xmin, ymax, ymin, zmax, zmin;
+    ae_set_mesh_bounding_box(mesh, &xmin, &xmax, &ymin, &ymax, &zmin, &zmax);
+
+    for (size_t t = 0; t < mesh.length; t++) {
+        for (size_t p = 0; p < 3; p++) {
+            float x, y, z;
+            x = mesh.elements[t].points[p].x;
+            y = mesh.elements[t].points[p].y;
+            z = mesh.elements[t].points[p].z;
+
+            float xdiff = xmax-xmin;
+            float ydiff = ymax-ymin;
+            float zdiff = zmax-zmin;
+            float max_diff = fmax(xdiff, fmax(ydiff, zdiff));
+            float xfactor = xdiff/max_diff;
+            float yfactor = ydiff/max_diff;
+            float zfactor = zdiff/max_diff;
+
+            x = (((x - xmin) / (xdiff)) * 2 - 1) * xfactor;
+            y = (((y - ymin) / (ydiff)) * 2 - 1) * yfactor;
+            z = (((z - zmin) / (zdiff)) * 2 - 1) * zfactor;
+
+            ae_set_tri_center_zmin_zmax(&(mesh.elements[t]));
+
+            mesh.elements[t].points[p].x = x;
+            mesh.elements[t].points[p].y = y;
+            mesh.elements[t].points[p].z = z;
+        }
+    }
+}
+
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far)
 {
     AE_ASSERT(4 == proj_mat.cols); 
@@ -529,11 +608,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     mat2D_free(light_directio_traspose);
     mat2D_free(dot_product);
 
-    des_tri.center.x = (des_tri.points[0].x + des_tri.points[1].x + des_tri.points[2].x) / 3;
-    des_tri.center.y = (des_tri.points[0].y + des_tri.points[1].y + des_tri.points[2].y) / 3;
-    des_tri.center.z = (des_tri.points[0].z + des_tri.points[1].z + des_tri.points[2].z) / 3;
-    des_tri.z_min = fmin(des_tri.points[0].z, fmin(des_tri.points[1].z, des_tri.points[2].z));
-    des_tri.z_max = fmax(des_tri.points[0].z, fmax(des_tri.points[1].z, des_tri.points[2].z));
+    ae_set_tri_center_zmin_zmax(&des_tri);
 
     return des_tri;
 }
