@@ -1,16 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#define ALMOG_STRING_MANIPULATION_IMPLEMENTATION
-#include "./../include/Almog_String_Manipulation.h"
+#define ALMOG_ENGINE_IMPLEMENTATION
 #include "./../include/Almog_Engine.h"
+#include "./../include/Almog_String_Manipulation.h"
 #include "./../include/Almog_Dynamic_Array.h"
-
-typedef struct {
-    size_t length;
-    size_t capacity;
-    Point* elements;
-} Points;
 
 #define AE_PRINT_TRI(tri) ae_print_tri(tri, #tri, 0)
 #define AE_PRINT_MESH(mesh) ae_print_mesh(mesh, #mesh, 0)
@@ -19,23 +13,6 @@ void print_points(Points p)
 {
     for (size_t i = 0; i < p.length; i++) {
         printf("point %3zu: (%5f, %5f, %5f)\n", i, p.elements[i].x, p.elements[i].y, p.elements[i].z);
-    }
-}
-
-void ae_print_tri(Tri tri, char *name, size_t padding)
-{
-    printf("%*s%s:\n", (int) padding, "", name);
-    printf("%*s    (%f, %f, %f)\n%*s    (%f, %f, %f)\n%*s    (%f, %f, %f)\n", (int) padding, "", tri.points[0].x, tri.points[0].y, tri.points[0].z, (int) padding, "", tri.points[1].x, tri.points[1].y, tri.points[1].z, (int) padding, "", tri.points[2].x, tri.points[2].y, tri.points[2].z);
-    printf("%*s    draw? %d\n", (int)padding, "", tri.to_draw);
-}
-
-void ae_print_mesh(Mesh mesh, char *name, size_t padding)
-{
-    char tri_name[256];
-    printf("%*s%s:\n", (int) padding, "", name);
-    for (size_t i = 0; i < mesh.length; i++) {
-        snprintf(tri_name, 256, "tri %zu", i);
-        ae_print_tri(mesh.elements[i], tri_name, 4);
     }
 }
 

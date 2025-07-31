@@ -8,6 +8,11 @@
 #endif
 #include "./../include/Matrix2D.h"
 
+#ifndef ALMOG_STRING_MANIPULATION_IMPLEMENTATION
+#define ALMOG_STRING_MANIPULATION_IMPLEMENTATION
+#endif
+#include "./../include/Almog_String_Manipulation.h"
+
 #ifndef AE_ASSERT
 #include <assert.h>
 #define AE_ASSERT assert
@@ -16,17 +21,33 @@
 #include <math.h>
 #include <stdbool.h>
 #include <float.h>
+#include <errno.h>
+#include <string.h>
 
 #ifndef PI
 #define PI M_PI
 #endif
 
+#ifndef POINT
+#define POINT
 typedef struct {
     float x;
     float y;
     float z;
 } Point ;
+#endif
 
+#ifndef POINTS
+#define POINTS
+typedef struct {
+    size_t length;
+    size_t capacity;
+    Point* elements;
+} Points;
+#endif
+
+#ifndef TRI
+#define TRI
 typedef struct {
     Point points[3];
     Point center;
@@ -35,12 +56,16 @@ typedef struct {
     bool to_draw;
     float light_intensity;
 } Tri;
+#endif
 
+#ifndef MESH
+#define MESH
 typedef struct {
     size_t length;
     size_t capacity;
     Tri *elements;
 } Mesh; /* Tri ada array */
+#endif
 
 typedef struct {
     size_t length;
@@ -57,8 +82,8 @@ typedef struct {
 } Camera;
 
 typedef struct {
-    Mesh cube;
-    Mesh proj_cube;
+    Mesh temp_mesh;
+    Mesh proj_temp_mesh;
     Mesh mesh;
     Camera camera;
     Mat2D light_direction;
@@ -69,6 +94,7 @@ Tri ae_create_tri(Point p1, Point p2, Point p3);
 Mesh ae_create_copy_of_mesh(Tri *mesh, size_t len);
 Mesh ae_create_cube(const size_t len);
 void ae_point_to_mat2D(Point p, Mat2D m);
+Mesh ae_get_mesh_from_file(char *file_name);
 
 void ae_print_tri(Tri tri, char *name, size_t padding);
 void ae_print_mesh(Mesh mesh, char *name, size_t padding);
@@ -328,6 +354,196 @@ void ae_point_to_mat2D(Point p, Mat2D m)
 
 }
 
+Mesh ae_get_mesh_from_file(char *file_name)
+{
+    char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE], current_num_str[MAX_LEN_LINE];
+    char file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE];
+    int texture_warning_was_printed = 0;
+
+    strncpy(file_extention, file_name, MAX_LEN_LINE);
+
+    /* check if file is an obj file*/
+    asm_get_word_and_cut(file_name, file_extention, '.');
+    asm_get_word_and_cut(file_name, file_extention, '.');
+    if (strncmp(file_extention, ".obj", MAX_LEN_LINE)) {
+        fprintf(stderr, "%s:%d: [Error] unsupported file format: '%s'\n", __FILE__, __LINE__, file_name);
+        exit(1);
+    }
+
+    strncpy(mesh_name, file_name, MAX_LEN_LINE);
+    while(asm_length(mesh_name)) {
+        asm_get_word_and_cut(current_word, mesh_name, '/');
+    }
+
+    strncpy(mesh_name, current_word, MAX_LEN_LINE);
+
+    strncpy(current_word, ".", MAX_LEN_LINE);
+    strncat(file_name, ".obj", MAX_LEN_LINE/2);
+    strncat(current_word, file_name, MAX_LEN_LINE/2);
+
+    FILE *fp_input = fopen(current_word, "rt");
+    if (fp_input == NULL) {
+        fprintf(stderr, "%s:%d: [Error] failed to open input file: '%s', %s\n", __FILE__, __LINE__, current_word, strerror(errno));
+        exit(1);
+    }
+
+    // strncpy(output_file_name, "./build/", MAX_LEN_LINE);
+    // strncat(output_file_name, mesh_name, MAX_LEN_LINE/2);
+    // strncat(output_file_name, ".c", MAX_LEN_LINE/2);
+    // FILE *fp_output = fopen(output_file_name, "wt");
+    // if (fp_input == NULL) {
+    //     fprintf(stderr, "%s:%d: [Error] failed to open output file: '%s'. %s\n", __FILE__, __LINE__, output_file_name, strerror(errno));
+    //     exit(1);
+    // }
+
+    /* parsing data from file */
+    Points points;
+    ada_init_array(Point, points);
+    Mesh mesh;
+    ada_init_array(Tri, mesh);
+
+    int line_len;
+
+    while ((line_len = asm_get_line(fp_input, current_line)) != -1) {
+        asm_get_next_word_from_line(current_word, current_line, ' ');
+        if (!strncmp(current_word, "v", 1)) {
+            Point p;
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            p.x = atof(current_word);
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            p.y = atof(current_word);
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            p.z = atof(current_word);
+            // printf("current word: %s\n", current_word);
+            ada_appand(Point, points, p);
+            // break;
+        }
+        if (!strncmp(current_word, "f", 1)) {
+            Tri tri1, tri2;
+
+            // printf("line: %s\nword: %s, %d\n", current_line, current_word, atoi(current_word));
+            asm_get_word_and_cut(current_word, current_line, ' ');
+            // printf("line: %s\nword: %s, %d\n", current_line, current_word, atoi(current_word));
+
+            int number_of_spaces = asm_str_in_str(current_line, " ");
+            // printf("%d\n", number_of_spaces);
+            // exit(1);
+            if (!(number_of_spaces == 3 || number_of_spaces == 4 || number_of_spaces == 5)) {
+                fprintf(stderr, "%s:%d: [Error] there is unsupported number of vertices for a face: %d\n", __FILE__, __LINE__, number_of_spaces);
+                exit(1);
+            }
+            if (number_of_spaces == 3) {
+                /* there are 3 vertices for the face. */
+                asm_get_word_and_cut(current_word, current_line, ' ');
+                // printf("line: %s\nword: %s, %d\n", current_line, current_word, atoi(current_word));
+                int number_of_backslash = asm_str_in_str(current_word, "/");
+                if (number_of_backslash == 0) {
+                    tri1.points[0] = points.elements[atoi(current_word)-1];
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    tri1.points[1] = points.elements[atoi(current_word)-1];
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    tri1.points[2] = points.elements[atoi(current_word)-1];
+                }
+                if (number_of_backslash == 2) {
+                    if (!texture_warning_was_printed) {
+                        fprintf(stderr, "%s:%d [Warning] texture and normals data ignored\n", __FILE__, __LINE__);
+                        texture_warning_was_printed = 1;
+                    }
+
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri1.points[0] = points.elements[atoi(current_num_str)-1];
+
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri1.points[1] = points.elements[atoi(current_num_str)-1];
+
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri1.points[2] = points.elements[atoi(current_num_str)-1];
+                }
+                tri1.to_draw = true;
+                tri1.light_intensity = 1;
+                tri1.center.x = (tri1.points[0].x + tri1.points[1].x + tri1.points[2].x) / 3;
+                tri1.center.y = (tri1.points[0].y + tri1.points[1].y + tri1.points[2].y) / 3;
+                tri1.center.z = (tri1.points[0].z + tri1.points[1].z + tri1.points[2].z) / 3;
+                tri1.z_min = fmin(tri1.points[0].z, fmin(tri1.points[1].z, tri1.points[2].z));
+                tri1.z_max = fmax(tri1.points[0].z, fmax(tri1.points[1].z, tri1.points[2].z));
+
+                ada_appand(Tri, mesh, tri1);
+                // AE_PRINT_TRI(tri1);
+            } else if (number_of_spaces == 5 || number_of_spaces == 4) {
+                /* there are 4 vertices for the face. */
+                /* sometimes there is a space in the end */
+                asm_get_word_and_cut(current_word, current_line, ' ');
+                // printf("line: %s\nword: %s, %d\n", current_line, current_word, atoi(current_word));
+                int number_of_backslash = asm_str_in_str(current_word, "/");
+                if (number_of_backslash == 0) {
+                    tri1.points[0] = points.elements[atoi(current_word)-1];
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    tri1.points[1] = points.elements[atoi(current_word)-1];
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    tri1.points[2] = points.elements[atoi(current_word)-1];
+                }
+                if (number_of_backslash == 2 || number_of_backslash == 1) {
+                    if (!texture_warning_was_printed) {
+                        fprintf(stderr, "%s:%d [Warning] texture and normals data ignored\n", __FILE__, __LINE__);
+                        texture_warning_was_printed = 1;
+                    }
+
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri1.points[0] = points.elements[atoi(current_num_str)-1];
+                    tri2.points[2] = points.elements[atoi(current_num_str)-1];
+
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri1.points[1] = points.elements[atoi(current_num_str)-1];
+
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri1.points[2] = points.elements[atoi(current_num_str)-1];
+                    tri2.points[0] = points.elements[atoi(current_num_str)-1];
+
+                    asm_get_word_and_cut(current_word, current_line, ' ');
+                    asm_get_word_and_cut(current_num_str, current_word, '/');
+                    // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
+                    tri2.points[1] = points.elements[atoi(current_num_str)-1];
+                }
+                tri1.to_draw = true;
+                tri1.light_intensity = 1;
+                tri1.center.x = (tri1.points[0].x + tri1.points[1].x + tri1.points[2].x) / 3;
+                tri1.center.y = (tri1.points[0].y + tri1.points[1].y + tri1.points[2].y) / 3;
+                tri1.center.z = (tri1.points[0].z + tri1.points[1].z + tri1.points[2].z) / 3;
+                tri1.z_min = fmin(tri1.points[0].z, fmin(tri1.points[1].z, tri1.points[2].z));
+                tri1.z_max = fmax(tri1.points[0].z, fmax(tri1.points[1].z, tri1.points[2].z));
+
+                tri2.to_draw = true;
+                tri2.light_intensity = 1;
+                tri2.center.x = (tri2.points[0].x + tri2.points[1].x + tri2.points[2].x) / 3;
+                tri2.center.y = (tri2.points[0].y + tri2.points[1].y + tri2.points[2].y) / 3;
+                tri2.center.z = (tri2.points[0].z + tri2.points[1].z + tri2.points[2].z) / 3;
+                tri2.z_min = fmin(tri2.points[0].z, fmin(tri2.points[1].z, tri2.points[2].z));
+                tri2.z_max = fmax(tri2.points[0].z, fmax(tri2.points[1].z, tri2.points[2].z));
+
+                ada_appand(Tri, mesh, tri1);
+                ada_appand(Tri, mesh, tri2);
+                // AE_PRINT_TRI(tri1);
+                // AE_PRINT_TRI(tri2);
+            }
+            // exit(2);
+        }
+    }
+    
+    return mesh;
+}
+
+
 void ae_print_tri(Tri tri, char *name, size_t padding)
 {
     printf("%*s%s:\n", (int) padding, "", name);
@@ -477,6 +693,7 @@ void ae_set_tri_center_zmin_zmax(Tri *tri)
     tri->z_max = fmax(tri->points[0].z, fmax(tri->points[1].z, tri->points[2].z));
 }
 
+/* normalize all the points in between -1 and 1. the origin is in the center of the body. */
 void ae_normalize_mesh(Mesh mesh)
 {
     float xmax, xmin, ymax, ymin, zmax, zmin;

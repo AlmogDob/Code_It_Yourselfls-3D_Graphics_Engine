@@ -4,8 +4,6 @@
 #include "Matrix2D.h"
 #include <stdlib.h>
 #include <stdint.h>
-#include <errno.h>
-#include <string.h>
 #include "Almog_Engine.h"
 
 #ifndef WINDOW_WIDTH

@@ -1,8 +1,6 @@
 #include <stdio.h>
-// #define ALMOG_STRING_MANIPULATION_IMPLEMENTATION
-#include "./../include/Almog_String_Manipulation.h"
 #define ALMOG_ENGINE_IMPLEMENTATION
-#include "./../include/Almog_Engine.h"
+#include "./include/Almog_Engine.h"
 
 int main()
 {

@@ -27,10 +27,6 @@ https://youtu.be/L1TbWe8bVOc?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw .*/
 #define MATRIX2D_ASSERT assert
 #endif //MATRIX2D_ASSERT
 
-#ifndef PI
-#define PI M_PI
-#endif
-
 typedef struct {
     size_t rows;
     size_t cols;
@@ -60,6 +56,10 @@ typedef struct {
 #else /* use this macro for batter performance but no assertion */
 #define MAT2D_AT(m, i, j) (m).elements[i * m.stride_r + j]
 #define MAT2D_AT_UINT32(m, i, j) (m).elements[i * m.stride_r + j]
+#endif
+
+#ifndef PI
+#define PI M_PI
 #endif
 
 #define MAT2D_MINOR_AT(mm, i, j) MAT2D_AT(mm.ref_mat, mm.rows_list[i], mm.cols_list[j])

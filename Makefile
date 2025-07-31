@@ -1,26 +1,10 @@
 CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
 CCHECKS = -fsanitize=address
-LIST_OBJ_C_FILE = ./build/test_file.c ./build/indoor_plant_02.c ./build/Skull_v3_L2.c ./build/suzanne.c ./build/f16.c ./build/cruiser.c ./build/bunny.c ./build/axis.c ./build/teapot.c  ./build/simple_shape.c ./build/LEGO_Man.c
-LIST_OBJ_FILE = ./obj_files/lego_man/test_file.obj ./obj_files/indoor_plant_02_obj/indoor_plant_02.obj ./obj_files/Skull/Skull_v3_L2.obj ./obj_files/suzanne/suzanne.obj ./obj_files/f16/f16.obj ./obj_files/cruiser/cruiser.obj ./obj_files/bunny.obj ./obj_files/axis.obj ./obj_files/teapot.obj ./obj_files/simple_shape/simple_shape.obj ./obj_files/lego_man/LEGO_Man.obj
-BUILD_OBJ_FILES = gcc ./src/Aobj2c.c $(CFLAGS) -o ./build/Aobj2c; \
-	./build/Aobj2c ./obj_files/axis.obj; \
-	./build/Aobj2c ./obj_files/indoor_plant_02_obj/indoor_plant_02.obj; \
-	./build/Aobj2c ./obj_files/Skull/Skull_v3_L2.obj; \
-	./build/Aobj2c ./obj_files/bunny.obj; \
-	./build/Aobj2c ./obj_files/f16/f16.obj; \
-	./build/Aobj2c ./obj_files/suzanne/suzanne.obj; \
-	./build/Aobj2c ./obj_files/cruiser/cruiser.obj; \
-	./build/Aobj2c ./obj_files/teapot.obj; \
-	./build/Aobj2c ./obj_files/simple_shape/simple_shape.obj; \
-	./build/Aobj2c ./obj_files/lego_man/LEGO_Man.obj; \
-	./build/Aobj2c ./obj_files/lego_man/test_file.obj
 
 main: build_main run_main clean_main  
 	@echo ./build/main done
 
-build_main: ./src/main.c $(LIST_OBJ_FILE)
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
+build_main: ./src/main.c 
 	@echo [Info] building main
 	@gcc ./src/main.c $(CFLAGS) -o ./build/main
 
@@ -31,14 +15,12 @@ run_main:
 
 clean_main:
 	@echo [Info] removing all build files
-	@rm ./build/Aobj2c ./build/main $(LIST_OBJ_C_FILE)
+	@rm ./build/main
 
 debug_main: debug_build_main
 	gdb ./build/main
 
 debug_build_main: ./src/main.c
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
 	@echo [Info] building main
 	gcc ./src/main.c $(CFLAGS) -ggdb -o ./build/main
 
@@ -52,9 +34,7 @@ profile_main: profile_build_main
 	rm ./gmon.out ./output.png 
 	make clean_main
 
-profile_build_main: ./src/main.c $(LIST_OBJ_FILE)
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
+profile_build_main: ./src/main.c
 	@echo [Info] building main
 	@gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
 
@@ -82,8 +62,6 @@ debug_temp: debug_build_temp
 	gdb ./build/temp
 
 debug_build_temp: ./src/temp.c
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
 	@echo [Info] building temp
 	@gcc ./src/temp.c $(CFLAGS) -ggdb -o ./build/temp
 
@@ -97,9 +75,7 @@ profile_temp: profile_build_temp
 	rm ./gmon.out ./output.png 
 	make clean_temp
 
-profile_build_temp: ./src/temp.c $(LIST_OBJ_FILE)
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
+profile_build_temp: ./src/temp.c
 	@echo [Info] building temp
 	@gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp
 
@@ -107,15 +83,6 @@ profile_build_temp: ./src/temp.c $(LIST_OBJ_FILE)
 # cloc --exclude-lang=JSON,make .
 
 #############################################################
-build_obj_files: $(LIST_OBJ_FILE)
-	@echo [Info] building obj files
-	@$(BUILD_OBJ_FILES)
-	@rm ./build/Aobj2c
-
-rm_obj_files: $(LIST_OBJ_FILE)
-	@echo [Info] rm obj files
-	@rm $(LIST_OBJ_C_FILE)
-
 video_ship: build_Aobj2c
 	@echo
 	./build/Aobj2c ./obj_files/video_ship.obj > ./build/video_ship.c

@@ -453,8 +453,6 @@ void ars_draw_mesh(Mat2D_uint32 screen_mat, Mesh mesh, uint32_t color)
             ars_draw_tri(screen_mat, tri, color);
         }
     }
-
-
 }
 
 void ars_fill_mesh_scanline_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, uint32_t color)
