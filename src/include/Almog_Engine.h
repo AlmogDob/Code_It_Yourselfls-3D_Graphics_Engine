@@ -91,11 +91,12 @@ typedef struct {
 } Scene;
 
 Tri ae_create_tri(Point p1, Point p2, Point p3);
-Mesh ae_create_copy_of_mesh(Tri *mesh, size_t len);
+void ae_create_copy_of_mesh(Mesh *des, Tri *src_elements, size_t len);
 Mesh ae_create_cube(const size_t len);
 void ae_point_to_mat2D(Point p, Mat2D m);
-Mesh ae_get_mesh_from_file(char *file_name);
+Mesh ae_get_mesh_from_obj_file(char *file_name);
 
+void ae_print_points(Points p);
 void ae_print_tri(Tri tri, char *name, size_t padding);
 void ae_print_mesh(Mesh mesh, char *name, size_t padding);
 void ae_print_mesh_static(Mesh_static mesh, char *name, size_t padding);
@@ -110,7 +111,7 @@ void ae_normalize_mesh(Mesh mesh);
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
 Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
+void ae_project_mesh_world2screen(Mat2D proj_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 
 void ae_swap_tri(Tri *v, int i, int j);
 bool ae_compare_tri(Tri t1, Tri t2);
@@ -136,15 +137,13 @@ Tri ae_create_tri(Point p1, Point p2, Point p3)
     return tri;
 }
 
-Mesh ae_create_copy_of_mesh(Tri *mesh, size_t len)
+void ae_create_copy_of_mesh(Mesh *des, Tri *src_elements, size_t len)
 {
-    Mesh des;
-    ada_init_array(Tri, des);
+    Mesh temp_des = *des;
     for (size_t i = 0; i < len; i++) {
-        ada_appand(Tri, des, mesh[i]);
+        ada_appand(Tri, temp_des, src_elements[i]);
     }
-
-    return des;
+    *des = temp_des;
 }
 
 Mesh ae_create_cube(const size_t len)
@@ -354,7 +353,7 @@ void ae_point_to_mat2D(Point p, Mat2D m)
 
 }
 
-Mesh ae_get_mesh_from_file(char *file_name)
+Mesh ae_get_mesh_from_obj_file(char *file_name)
 {
     char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE], current_num_str[MAX_LEN_LINE];
     char file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE];
@@ -543,6 +542,12 @@ Mesh ae_get_mesh_from_file(char *file_name)
     return mesh;
 }
 
+void ae_print_points(Points p)
+{
+    for (size_t i = 0; i < p.length; i++) {
+        printf("point %3zu: (%5f, %5f, %5f)\n", i, p.elements[i].x, p.elements[i].y, p.elements[i].z);
+    }
+}
 
 void ae_print_tri(Tri tri, char *name, size_t padding)
 {
@@ -830,21 +835,17 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     return des_tri;
 }
 
-Mesh ae_project_mesh_world2screen(Mat2D proj_mat, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
+void ae_project_mesh_world2screen(Mat2D proj_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
-    Mesh des;
-
-    ada_init_array(Tri, des);
-
+    Mesh temp_des = *des;
     for (size_t i = 0; i < src.length; i++) {
         Tri temp_tri;
         temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], window_w, window_h, light_direction, scene);
         // AE_PRINT_TRI(temp_tri);
         
-        ada_appand(Tri, des, temp_tri);
+        ada_appand(Tri, temp_des, temp_tri);
     }
-
-    return des;
+    *des = temp_des;
 }
 
 /* swap: interchange v[i] and v[j] */

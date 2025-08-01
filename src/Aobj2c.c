@@ -9,13 +9,6 @@
 #define AE_PRINT_TRI(tri) ae_print_tri(tri, #tri, 0)
 #define AE_PRINT_MESH(mesh) ae_print_mesh(mesh, #mesh, 0)
 
-void print_points(Points p)
-{
-    for (size_t i = 0; i < p.length; i++) {
-        printf("point %3zu: (%5f, %5f, %5f)\n", i, p.elements[i].x, p.elements[i].y, p.elements[i].z);
-    }
-}
-
 int main(int argc, char const *argv[])
 {
     char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE], current_num_str[MAX_LEN_LINE];

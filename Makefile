@@ -38,7 +38,7 @@ profile_build_main: ./src/main.c
 	@echo [Info] building main
 	@gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
 
-# valgrind -s --leak-check=full ./main
+# valgrind -s --leak-check=full ./build/main
 # cloc --exclude-lang=JSON,make .
 
 #############################################################
