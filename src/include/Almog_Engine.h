@@ -28,6 +28,22 @@
 #define PI M_PI
 #endif
 
+#ifndef STL_HEADER_SIZE
+#define STL_HEADER_SIZE 80
+#endif
+
+#ifndef STL_NUM_SIZE
+#define STL_NUM_SIZE 4
+#endif
+
+#ifndef STL_SIZE_FOREACH_TRI
+#define STL_SIZE_FOREACH_TRI 50
+#endif
+
+#ifndef STL_ATTRIBUTE_BITS_SIZE
+#define STL_ATTRIBUTE_BITS_SIZE 2
+#endif
+
 #ifndef POINT
 #define POINT
 typedef struct {
@@ -95,7 +111,8 @@ Tri ae_create_tri(Point p1, Point p2, Point p3);
 void ae_create_copy_of_mesh(Mesh *des, Tri *src_elements, size_t len);
 Mesh ae_create_cube(const size_t len);
 void ae_point_to_mat2D(Point p, Mat2D m);
-Mesh ae_get_mesh_from_obj_file(char *file_name);
+Mesh ae_get_mesh_from_obj_file(char *file_path);
+Mesh ae_get_mesh_from_stl_file(char *file_path);
 
 void ae_print_points(Points p);
 void ae_print_tri(Tri tri, char *name, size_t padding);
@@ -104,7 +121,7 @@ void ae_print_mesh_static(Mesh_static mesh, char *name, size_t padding);
 
 void ae_calc_normal_to_tri(Mat2D normal, Tri tri);
 void ae_translate_mesh(Mesh mesh, float x, float y, float z);
-void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi);
+void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi_deg, float theta_deg, float psi_deg);
 void ae_set_mesh_bounding_box(Mesh mesh, float *x_min, float *x_max, float *y_min, float *y_max, float *z_min, float *z_max);
 void ae_set_tri_center_zmin_zmax(Tri *tri);
 void ae_normalize_mesh(Mesh mesh);
@@ -354,12 +371,13 @@ void ae_point_to_mat2D(Point p, Mat2D m)
 
 }
 
-Mesh ae_get_mesh_from_obj_file(char *file_name)
+Mesh ae_get_mesh_from_obj_file(char *file_path)
 {
     char current_line[MAX_LEN_LINE], current_word[MAX_LEN_LINE], current_num_str[MAX_LEN_LINE];
-    char file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE];
+    char file_name[MAX_LEN_LINE], file_extention[MAX_LEN_LINE], mesh_name[MAX_LEN_LINE];
     int texture_warning_was_printed = 0;
 
+    strncpy(file_name, file_path, MAX_LEN_LINE);
     strncpy(file_extention, file_name, MAX_LEN_LINE);
 
     /* check if file is an obj file*/
@@ -543,6 +561,60 @@ Mesh ae_get_mesh_from_obj_file(char *file_name)
     return mesh;
 }
 
+Mesh ae_get_mesh_from_stl_file(char *file_path)
+{
+    FILE *file;
+    file = fopen(file_path, "rb");
+    if (file == NULL) {
+        fprintf(stderr, "%s:%d: [Error] failed to open input file: '%s', %s\n", __FILE__, __LINE__, file_path, strerror(errno));
+        exit(1);
+    }
+
+    char header[STL_HEADER_SIZE];
+    fread(header, STL_HEADER_SIZE, 1, file);
+    // dprintSTRING(header);
+
+    uint32_t num_of_tri;
+    fread(&num_of_tri, STL_NUM_SIZE, 1, file);
+    // dprintINT(num_of_tri);
+
+    Mesh mesh;
+    ada_init_array(Tri, mesh);
+    for (size_t i = 0; i < num_of_tri; i++) {
+        Tri temp_tri;
+
+        fread(&(temp_tri.normal.x), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.normal.y), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.normal.z), STL_NUM_SIZE, 1, file);
+
+        fread(&(temp_tri.points[0].x), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.points[0].y), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.points[0].z), STL_NUM_SIZE, 1, file);
+
+        fread(&(temp_tri.points[1].x), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.points[1].y), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.points[1].z), STL_NUM_SIZE, 1, file);
+        
+        fread(&(temp_tri.points[2].x), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.points[2].y), STL_NUM_SIZE, 1, file);
+        fread(&(temp_tri.points[2].z), STL_NUM_SIZE, 1, file);
+
+        fseek(file, STL_ATTRIBUTE_BITS_SIZE, SEEK_CUR);
+
+        temp_tri.to_draw = true;
+        temp_tri.light_intensity = 1;
+        temp_tri.center.x = (temp_tri.points[0].x + temp_tri.points[1].x + temp_tri.points[2].x) / 3;
+        temp_tri.center.y = (temp_tri.points[0].y + temp_tri.points[1].y + temp_tri.points[2].y) / 3;
+        temp_tri.center.z = (temp_tri.points[0].z + temp_tri.points[1].z + temp_tri.points[2].z) / 3;
+        temp_tri.z_min = fmin(temp_tri.points[0].z, fmin(temp_tri.points[1].z, temp_tri.points[2].z));
+        temp_tri.z_max = fmax(temp_tri.points[0].z, fmax(temp_tri.points[1].z, temp_tri.points[2].z));
+
+        ada_appand(Tri, mesh, temp_tri);
+    }
+
+    return mesh;
+}
+
 void ae_print_points(Points p)
 {
     for (size_t i = 0; i < p.length; i++) {
@@ -614,14 +686,14 @@ void ae_translate_mesh(Mesh mesh, float x, float y, float z)
 
 /* phi around x, theta around y, psi around z.
 DCM = Cz*Cy*Cx */
-void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi, float theta, float psi)
+void ae_rotate_mesh_Euler_xyz(Mesh mesh, float phi_deg, float theta_deg, float psi_deg)
 {
     Mat2D RotZ = mat2D_alloc(3,3);
-    mat2D_set_rot_mat_z(RotZ, psi);
+    mat2D_set_rot_mat_z(RotZ, psi_deg);
     Mat2D RotY = mat2D_alloc(3,3);
-    mat2D_set_rot_mat_y(RotY, theta);
+    mat2D_set_rot_mat_y(RotY, theta_deg);
     Mat2D RotX = mat2D_alloc(3,3);
-    mat2D_set_rot_mat_x(RotX, phi);
+    mat2D_set_rot_mat_x(RotX, phi_deg);
     Mat2D DCM = mat2D_alloc(3,3);
     // mat2D_fill(DCM,0);
     Mat2D temp = mat2D_alloc(3,3);

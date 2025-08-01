@@ -15,7 +15,6 @@ https://youtu.be/L1TbWe8bVOc?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw .*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
 #include <stdbool.h>
 
 #ifndef MATRIX2D_MALLOC
@@ -59,7 +58,11 @@ typedef struct {
 #endif
 
 #ifndef PI
-#define PI M_PI
+    #ifndef __USE_MISC
+    #define __USE_MISC
+    #endif
+    #include <math.h>
+    #define PI M_PI
 #endif
 
 #define MAT2D_MINOR_AT(mm, i, j) MAT2D_AT(mm.ref_mat, mm.rows_list[i], mm.cols_list[j])

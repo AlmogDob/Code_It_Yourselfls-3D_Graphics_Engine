@@ -1,6 +1,5 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <math.h>
 #include "Matrix2D.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -33,7 +32,13 @@
 #define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
 #define RGB_hexRGB(r, g, b) (int)(0x010000*(r) + 0x000100*(g) + 0x000001*(b))
 
-#define PI M_PI
+#ifndef PI
+    #ifndef __USE_MISC
+    #define __USE_MISC
+    #endif
+    #include <math.h>
+    #define PI M_PI
+#endif
 
 typedef struct {
     int game_is_running;

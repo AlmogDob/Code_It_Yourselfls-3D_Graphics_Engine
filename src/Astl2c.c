@@ -1,11 +1,6 @@
 #define ALMOG_ENGINE_IMPLEMENTATION
 #include "./include/Almog_Engine.h"
 
-#define STL_HEADER_SIZE 80
-#define STL_NUM_SIZE 4
-#define STL_FOREACH_TRI 50
-#define STL_ATTRIBUTE_BITS_SIZE 2
-
 int main(void)
 {
 
@@ -24,11 +19,6 @@ int main(void)
     uint32_t num_of_tri;
     fread(&num_of_tri, STL_NUM_SIZE, 1, file);
     dprintINT(num_of_tri);
-
-    // char start_loop[STL_FOREACH_TRI];
-    // fread(start_loop, STL_FOREACH_TRI, 1, file);
-    // dprintSTRING(start_loop);
-    fseek(file, STL_FOREACH_TRI, SEEK_CUR);
 
     Mesh mesh;
     ada_init_array(Tri, mesh);
