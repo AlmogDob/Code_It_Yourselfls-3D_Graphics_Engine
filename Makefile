@@ -159,3 +159,14 @@ profile_build_Aobj2c: ./src/Aobj2c.c
 
 # valgrind -s --leak-check=full ./Aobj2c
 # cloc --exclude-lang=JSON,make .
+
+#############################################################
+
+Astl2c: ./src/Astl2c.c
+	@echo [Info] building Astl2c
+	@gcc ./src/Astl2c.c $(CFLAGS) -o ./build/Astl2c
+	@echo
+	./build/Astl2c
+	@echo
+	@echo [Info] removing Astl2c
+	@rm ./build/Astl2c

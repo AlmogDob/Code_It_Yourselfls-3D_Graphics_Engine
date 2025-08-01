@@ -51,6 +51,7 @@ typedef struct {
 typedef struct {
     Point points[3];
     Point center;
+    Point normal;
     float z_min;
     float z_max;
     bool to_draw;

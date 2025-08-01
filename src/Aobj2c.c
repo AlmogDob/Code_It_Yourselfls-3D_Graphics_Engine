@@ -2,9 +2,8 @@
 #include <string.h>
 #include <errno.h>
 #define ALMOG_ENGINE_IMPLEMENTATION
-#include "./../include/Almog_Engine.h"
-#include "./../include/Almog_String_Manipulation.h"
-#include "./../include/Almog_Dynamic_Array.h"
+#include "./include/Almog_Engine.h"
+#include "./include/Almog_String_Manipulation.h"
 
 #define AE_PRINT_TRI(tri) ae_print_tri(tri, #tri, 0)
 #define AE_PRINT_MESH(mesh) ae_print_mesh(mesh, #mesh, 0)
