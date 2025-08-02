@@ -5,8 +5,8 @@ featured in this video of his:
 https://youtu.be/L1TbWe8bVOc?list=PLpM-Dvs8t0VZPZKggcql-MmjaBdZKeDMw .*/
 
 /* NOTES:
- * There is a hole set of function for deling with the minors of a matrix because I tried to calculate the determinant of a matrix with them but it terns out to be TO SLOW. Insted I use Gauss elimination.
- * There are some stability problems in the inversion function. When the values of the matrix becomes too small, the inversion fails. Currently the only fix I can think of is to use pre-conditioners. However, it means to creat a function to solve the hole problem 'Ax=B', which wasn't my intention in the first place. I might do it but I am not sure. */
+ * There is a hole set of function for deling with the minors of a matrix because I tried to calculate the determinant of a matrix with them but it terns out to be TOO SLOW. Insted I use Gauss elimination.
+ * There are some stability problems in the inversion function. When the values of the matrix becomes too small, the inversion fails. Currently the only fix I can think of is to use pre-conditioners. Which means using a function to solve the hole problem 'Ax=B' */
 
 #ifndef MATRIX2D_H_
 #define MATRIX2D_H_
@@ -49,7 +49,7 @@ typedef struct {
     Mat2D ref_mat;
 } Mat2D_Minor;
 
-#if 0
+#if 1
 #define MAT2D_AT(m, i, j) (m).elements[mat2D_offset2d((m), (i), (j))]
 #define MAT2D_AT_UINT32(m, i, j) (m).elements[mat2D_offset2d_uint32((m), (i), (j))]
 #else /* use this macro for batter performance but no assertion */
@@ -84,6 +84,7 @@ void mat2D_fill_sequence(Mat2D m, double start, double step);
 void mat2D_rand(Mat2D m, double low, double high);
 
 void mat2D_dot(Mat2D dst, Mat2D a, Mat2D b);
+double mat2D_dot_product(Mat2D a, Mat2D b);
 void mat2D_cross(Mat2D dst, Mat2D a, Mat2D b);
 
 void mat2D_add(Mat2D dst, Mat2D a);
@@ -234,6 +235,29 @@ void mat2D_dot(Mat2D dst, Mat2D a, Mat2D b)
         }
     }
 
+}
+
+/* calculating the dot product of two vectors. a: nx1, b: nx1 */
+double mat2D_dot_product(Mat2D a, Mat2D b)
+{
+    MATRIX2D_ASSERT(a.rows == b.rows);
+    MATRIX2D_ASSERT(a.cols == b.cols);
+    MATRIX2D_ASSERT((1 == a.cols && 1 == b.cols) || (1 == a.rows && 1 == b.rows));
+
+    double dot_product = 0;
+
+    if (1 == a.cols) {
+        for (size_t i = 0; i < a.rows; i++) {
+            dot_product += MAT2D_AT(a, i, 0) * MAT2D_AT(b, i, 0);
+        }
+    } else {
+        for (size_t j = 0; j < a.cols; j++) {
+            dot_product += MAT2D_AT(a, 0, j) * MAT2D_AT(b, 0, j);
+        }
+    }
+    
+    return dot_product;
+    
 }
 
 void mat2D_cross(Mat2D dst, Mat2D a, Mat2D b)

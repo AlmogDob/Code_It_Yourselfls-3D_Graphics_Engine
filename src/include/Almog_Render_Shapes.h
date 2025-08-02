@@ -303,11 +303,14 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t 
 
             if (w0 * w >= 0 && w1 * w >= 0 &&  w2 * w >= 0) {
                 HexARGB_RGBA_VAR(color);
-                r *= light_intensity;
-                g *= light_intensity;
-                b *= light_intensity;
+                float rf = r * light_intensity;
+                float gf = g * light_intensity;
+                float bf = b * light_intensity;
+                uint8_t r8 = (uint8_t)fmaxf(0, fminf(255, rf));
+                uint8_t g8 = (uint8_t)fmaxf(0, fminf(255, gf));
+                uint8_t b8 = (uint8_t)fmaxf(0, fminf(255, bf));
                 (void)a;
-                ars_draw_point(screen_mat, x, y, RGB_hexRGB(r, g, b));
+                ars_draw_point(screen_mat, x, y, RGB_hexRGB(r8, g8, b8));
             }
         }
     }

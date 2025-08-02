@@ -103,8 +103,10 @@ typedef struct {
     Mesh proj_temp_mesh;
     Mesh mesh;
     Camera camera;
+    Mat2D up_direction;
     Mat2D light_direction;
     Mat2D proj_mat;
+    Mat2D view_mat;
 } Scene;
 
 Tri ae_create_tri(Point p1, Point p2, Point p3);
@@ -127,9 +129,10 @@ void ae_set_tri_center_zmin_zmax(Tri *tri);
 void ae_normalize_mesh(Mesh mesh);
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
-Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
-void ae_project_mesh_world2screen(Mat2D proj_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
+void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up);
+Point ae_project_point_world2screen(Mat2D proj_mat, Mat2D view_mat, Point src);
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
+void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 
 void ae_swap_tri(Tri *v, int i, int j);
 bool ae_compare_tri(Tri t1, Tri t2);
@@ -822,10 +825,62 @@ void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, flo
     MAT2D_AT(proj_mat, 3, 2) = - z_normalization * z_near;
 }
 
-Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
+void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
+{
+    Mat2D target = mat2D_alloc(3, 1);
+    mat2D_fill(target, 0);
+    mat2D_add(target, camera.position);
+    mat2D_add(target, camera.direction);
+
+    /* calc new forward direction */
+    Mat2D new_forward = mat2D_alloc(3, 1);
+    mat2D_fill(new_forward, 0);
+    mat2D_copy(new_forward, target);
+    mat2D_sub(new_forward, camera.position);
+    mat2D_mult(new_forward, 1.0 / mat2D_calc_norma(new_forward));
+
+    /* calc new up direction */
+    Mat2D temp_vec = target;
+    mat2D_copy(temp_vec, new_forward);
+    mat2D_mult(temp_vec, mat2D_dot_product(up, new_forward));
+    Mat2D new_up = mat2D_alloc(3, 1);
+    mat2D_copy(new_up, up);
+    mat2D_sub(new_up, temp_vec);
+    mat2D_mult(new_up, 1.0 / mat2D_calc_norma(new_up));
+
+    /* calc new right direction */
+    Mat2D new_right = mat2D_alloc(3, 1);
+    mat2D_cross(new_right, new_up, new_forward);
+
+    MAT2D_AT(view_mat, 0, 0) = MAT2D_AT(new_right, 0, 0);
+    MAT2D_AT(view_mat, 0, 1) = MAT2D_AT(new_up, 0, 0);
+    MAT2D_AT(view_mat, 0, 2) = MAT2D_AT(new_forward, 0, 0);
+    MAT2D_AT(view_mat, 0, 3) = 0;
+    MAT2D_AT(view_mat, 1, 0) = MAT2D_AT(new_right, 1, 0);
+    MAT2D_AT(view_mat, 1, 1) = MAT2D_AT(new_up, 1, 0);
+    MAT2D_AT(view_mat, 1, 2) = MAT2D_AT(new_forward, 1, 0);
+    MAT2D_AT(view_mat, 1, 3) = 0;
+    MAT2D_AT(view_mat, 2, 0) = MAT2D_AT(new_right, 2, 0);
+    MAT2D_AT(view_mat, 2, 1) = MAT2D_AT(new_up, 2, 0);
+    MAT2D_AT(view_mat, 2, 2) = MAT2D_AT(new_forward, 2, 0);
+    MAT2D_AT(view_mat, 2, 3) = 0;
+    MAT2D_AT(view_mat, 3, 0) = - mat2D_dot_product(camera.position, new_right);
+    MAT2D_AT(view_mat, 3, 1) = - mat2D_dot_product(camera.position, new_up);
+    MAT2D_AT(view_mat, 3, 2) = - mat2D_dot_product(camera.position, new_forward);
+    MAT2D_AT(view_mat, 3, 3) = 1;
+
+
+    mat2D_free(target);
+    mat2D_free(new_forward);
+    mat2D_free(new_up);
+    mat2D_free(new_right);
+}
+
+Point ae_project_point_world2screen(Mat2D proj_mat, Mat2D view_mat, Point src)
 {
     Mat2D src_point_mat = mat2D_alloc(1,4);
     // mat2D_fill(src_point_mat, 0);
+    Mat2D temp_des_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
     // mat2D_fill(des_point_mat, 0);
     Point des;
@@ -835,7 +890,8 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
     MAT2D_AT(src_point_mat, 0, 2) = src.z;
     MAT2D_AT(src_point_mat, 0, 3) = 1;
 
-    mat2D_dot(des_point_mat, src_point_mat, proj_mat);
+    mat2D_dot(temp_des_point_mat, src_point_mat, view_mat);
+    mat2D_dot(des_point_mat, temp_des_point_mat, proj_mat);
 
     if (MAT2D_AT(des_point_mat, 0, 3)) {
         des.x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
@@ -849,11 +905,12 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
 
     mat2D_free(src_point_mat);
     mat2D_free(des_point_mat);
+    mat2D_free(temp_des_point_mat);
 
     return des;
 }
 
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
+Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
     Mat2D tri_normal = mat2D_alloc(3, 1);
     Mat2D temp_camera2tri = mat2D_alloc(3, 1);
@@ -869,14 +926,20 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     mat2D_transpose(camera2tri, temp_camera2tri);
     mat2D_transpose(light_directio_traspose, light_direction);
 
+    /* calc lighting intensity of tri */
     MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(light_directio_traspose, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(light_directio_traspose, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(light_directio_traspose, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
     // mat2D_dot(dot_product, light_directio_traspose, tri_normal);
-
     des_tri.light_intensity = MAT2D_AT(dot_product, 0, 0);
+
+    if (des_tri.light_intensity > 1) {
+        dprintD(des_tri.light_intensity);
+    }
+
     if (des_tri.light_intensity < 0) {
         des_tri.light_intensity = 0;
     }
 
+    /* calc if tri is visible to the camera */
     MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(camera2tri, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(camera2tri, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(camera2tri, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
     // mat2D_dot(dot_product, camera2tri, tri_normal);
 
@@ -887,7 +950,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     }
 
     for (int i = 0; i < 3; i++) {
-        des_tri.points[i] = ae_project_point_world2screen(proj_mat, tri.points[i]);
+        des_tri.points[i] = ae_project_point_world2screen(proj_mat, view_mat, tri.points[i]);
 
         /* scale into view */
         des_tri.points[i].x += 1;
@@ -908,16 +971,18 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Tri tri, int window_w, int windo
     return des_tri;
 }
 
-void ae_project_mesh_world2screen(Mat2D proj_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
+void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
     Mesh temp_des = *des;
     for (size_t i = 0; i < src.length; i++) {
         Tri temp_tri;
-        temp_tri = ae_project_tri_world2screen(proj_mat, src.elements[i], window_w, window_h, light_direction, scene);
+        temp_tri = ae_project_tri_world2screen(proj_mat, view_mat, src.elements[i], window_w, window_h, light_direction, scene);
         // AE_PRINT_TRI(temp_tri);
         
         ada_appand(Tri, temp_des, temp_tri);
     }
+    ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
+
     *des = temp_des;
 }
 
