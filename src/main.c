@@ -33,7 +33,6 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./obj_files/teapot.obj", MAX_LEN_LINE);
     strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/video_ship.obj", MAX_LEN_LINE);
-    game_state->scene.mesh = ae_get_mesh_from_obj_file(file_path);
 
     // strncpy(file_path, "./stl_files/plug.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/pin.STL", MAX_LEN_LINE);
@@ -42,10 +41,13 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./stl_files/Stanford dragon lowres.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Voronoi_Stanford_Bunny.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Lucy_120mm_simplified.STL", MAX_LEN_LINE);
-    // game_state->scene.mesh = ae_get_mesh_from_stl_file(file_path);
+
+    game_state->scene.mesh = ae_get_mesh_from_file(file_path);
 
     dprintSIZE_T(game_state->scene.mesh.length);
-    ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, 0, 0, 180);
+    // ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, 0, 0, 180);
+    // ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, -90, 0, 0);
+    // ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, 0, 180, 0);
     ae_normalize_mesh(game_state->scene.mesh);
 
 }
@@ -65,7 +67,6 @@ void update(game_state_t *game_state)
     ae_translate_mesh(temp_mesh, 0, 0, 2);
 
     ae_project_mesh_world2screen(game_state->scene.proj_mat, game_state->scene.view_mat, &(game_state->scene.proj_temp_mesh), temp_mesh, game_state->window_w, game_state->window_h, game_state->scene.light_direction, &(game_state->scene));
-
 
     temp_mesh.length = 0;
 }

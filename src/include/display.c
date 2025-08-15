@@ -225,74 +225,40 @@ void process_input_window(game_state_t *game_state)
                     }
                 }
                 if (event.key.keysym.sym == SDLK_w) {
-                    MAT2D_AT(game_state->scene.camera.position, 2, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) += 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_s) {
-                    MAT2D_AT(game_state->scene.camera.position, 2, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) -= 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_d) {
-                    MAT2D_AT(game_state->scene.camera.position, 0, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) += 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_a) {
-                    MAT2D_AT(game_state->scene.camera.position, 0, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) -= 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_e) {
-                    MAT2D_AT(game_state->scene.camera.position, 1, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) -= 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_q) {
-                    MAT2D_AT(game_state->scene.camera.position, 1, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) += 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
-                    Mat2D temp_DCM = mat2D_alloc(3,3);
-                    Mat2D temp_v1 = mat2D_alloc(3,1);
-                    Mat2D temp_v2 = mat2D_alloc(3,1);
-                    mat2D_set_rot_mat_y(temp_DCM, 1);
-                    mat2D_copy(temp_v1, game_state->scene.camera.direction);
-                    mat2D_dot(temp_v2, temp_DCM, temp_v1);
-                    mat2D_copy(game_state->scene.camera.direction, temp_v2);
-
-                    mat2D_free(temp_DCM);
-                    mat2D_free(temp_v1);
-                    mat2D_free(temp_v2);
+                    game_state->scene.camera.pitch_offset_deg -= 1;
                 }
                 if (event.key.keysym.sym == SDLK_RIGHT) {
-                    Mat2D temp_DCM = mat2D_alloc(3,3);
-                    Mat2D temp_v1 = mat2D_alloc(3,1);
-                    Mat2D temp_v2 = mat2D_alloc(3,1);
-                    mat2D_set_rot_mat_y(temp_DCM, -1);
-                    mat2D_copy(temp_v1, game_state->scene.camera.direction);
-                    mat2D_dot(temp_v2, temp_DCM, temp_v1);
-                    mat2D_copy(game_state->scene.camera.direction, temp_v2);
-
-                    mat2D_free(temp_DCM);
-                    mat2D_free(temp_v1);
-                    mat2D_free(temp_v2);
+                    game_state->scene.camera.pitch_offset_deg += 1;
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
-                    Mat2D temp_DCM = mat2D_alloc(3,3);
-                    Mat2D temp_v1 = mat2D_alloc(3,1);
-                    Mat2D temp_v2 = mat2D_alloc(3,1);
-                    mat2D_set_rot_mat_x(temp_DCM, -1);
-                    mat2D_copy(temp_v1, game_state->scene.camera.direction);
-                    mat2D_dot(temp_v2, temp_DCM, temp_v1);
-                    mat2D_copy(game_state->scene.camera.direction, temp_v2);
-
-                    mat2D_free(temp_DCM);
-                    mat2D_free(temp_v1);
-                    mat2D_free(temp_v2);
+                    game_state->scene.camera.roll_offset_deg += 1;
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
-                    Mat2D temp_DCM = mat2D_alloc(3,3);
-                    Mat2D temp_v1 = mat2D_alloc(3,1);
-                    Mat2D temp_v2 = mat2D_alloc(3,1);
-                    mat2D_set_rot_mat_x(temp_DCM, 1);
-                    mat2D_copy(temp_v1, game_state->scene.camera.direction);
-                    mat2D_dot(temp_v2, temp_DCM, temp_v1);
-                    mat2D_copy(game_state->scene.camera.direction, temp_v2);
-
-                    mat2D_free(temp_DCM);
-                    mat2D_free(temp_v1);
-                    mat2D_free(temp_v2);
+                    game_state->scene.camera.roll_offset_deg -= 1;
+                }
+                if (event.key.keysym.sym == SDLK_r) {
+                    game_state->scene.camera.roll_offset_deg = 0;
+                    game_state->scene.camera.pitch_offset_deg = 0;
+                    game_state->scene.camera.yaw_offset_deg = 0;
+                    mat2D_fill(game_state->scene.camera.offset_position, 0);
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
@@ -423,15 +389,34 @@ void init_scene(game_state_t *game_state)
 {
     game_state->scene.camera.z_near       = 0.1;
     game_state->scene.camera.z_far        = 1000;
-    game_state->scene.camera.fov_deg      = 90;
+    game_state->scene.camera.fov_deg      = 60;
     game_state->scene.camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
 
-    game_state->scene.camera.position = mat2D_alloc(3, 1);
-    mat2D_fill(game_state->scene.camera.position, 0);
+    game_state->scene.camera.init_position = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.init_position, 0);
+
+    game_state->scene.camera.offset_position = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.offset_position, 0);
+
+    game_state->scene.camera.roll_offset_deg = 0;
+    game_state->scene.camera.pitch_offset_deg = 0;
+    game_state->scene.camera.yaw_offset_deg = 0;
 
     game_state->scene.camera.direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.direction, 0);
     MAT2D_AT(game_state->scene.camera.direction, 2, 0) = 1;
+
+    game_state->scene.camera.camera_x = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.camera_x, 0);
+    MAT2D_AT(game_state->scene.camera.camera_x, 0, 0) = 1;
+    
+    game_state->scene.camera.camera_y = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.camera_y, 0);
+    MAT2D_AT(game_state->scene.camera.camera_y, 1, 0) = 1;
+
+    game_state->scene.camera.camera_z = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.camera_z, 0);
+    MAT2D_AT(game_state->scene.camera.camera_z, 2, 0) = 1;
 
     game_state->scene.up_direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.up_direction, 0);
@@ -439,6 +424,7 @@ void init_scene(game_state_t *game_state)
 
     game_state->scene.light_direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.light_direction, 0);
+    MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
     MAT2D_AT(game_state->scene.light_direction, 2, 0) = -1;
 
     game_state->scene.proj_mat = mat2D_alloc(4, 4);

@@ -104,6 +104,7 @@ double mat2D_make_identity(Mat2D m);
 void mat2D_set_rot_mat_x(Mat2D m, float angle_deg);
 void mat2D_set_rot_mat_y(Mat2D m, float angle_deg);
 void mat2D_set_rot_mat_z(Mat2D m, float angle_deg);
+void mat2D_set_DCM_zyx(Mat2D DCM, float yaw_deg, float pitch_deg, float roll_deg);
 
 void mat2D_copy(Mat2D des, Mat2D src);
 void mat2D_copy_mat_to_mat_at_window(Mat2D des, Mat2D src, size_t is, size_t js, size_t ie, size_t je);
@@ -437,6 +438,26 @@ void mat2D_set_rot_mat_z(Mat2D m, float angle_deg)
     MAT2D_AT(m, 0, 1) =  sin(angle_rad);
     MAT2D_AT(m, 1, 0) = -sin(angle_rad);
     MAT2D_AT(m, 1, 1) =  cos(angle_rad);
+}
+
+void mat2D_set_DCM_zyx(Mat2D DCM, float yaw_deg, float pitch_deg, float roll_deg)
+{
+    Mat2D RotZ = mat2D_alloc(3,3);
+    mat2D_set_rot_mat_z(RotZ, roll_deg);
+    Mat2D RotY = mat2D_alloc(3,3);
+    mat2D_set_rot_mat_y(RotY, pitch_deg);
+    Mat2D RotX = mat2D_alloc(3,3);
+    mat2D_set_rot_mat_x(RotX, yaw_deg);
+    Mat2D temp = mat2D_alloc(3,3);
+
+    mat2D_dot(temp, RotY, RotZ);
+    mat2D_dot(DCM, RotX, temp); /* I have a DCM */
+
+
+    mat2D_free(RotZ);
+    mat2D_free(RotY);
+    mat2D_free(RotX);
+    mat2D_free(temp);
 }
 
 void mat2D_copy(Mat2D des, Mat2D src)

@@ -483,9 +483,9 @@ void ars_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, int co
         if (rand_color) {
             color = rand_double() * 0xFFFFFF;
         }
-        if (tri.to_draw) {
+        // if (tri.to_draw) {
             ars_fill_tri_Pinedas_rasterizer(screen_mat, tri, color, tri.light_intensity);
-        }
+        // }
     }
 }
 
