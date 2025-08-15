@@ -90,6 +90,7 @@ void render(game_state_t *game_state);
 void check_window_mat_size(game_state_t *game_state);
 void copy_mat_to_surface_RGB(game_state_t *game_state);
 void init_scene(game_state_t *game_state);
+void reset_camera_pos(game_state_t *game_state);
 
 int main()
 {
@@ -225,10 +226,10 @@ void process_input_window(game_state_t *game_state)
                     }
                 }
                 if (event.key.keysym.sym == SDLK_w) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) -= 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_s) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) += 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_d) {
                     MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) += 0.1;
@@ -237,10 +238,10 @@ void process_input_window(game_state_t *game_state)
                     MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) -= 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_e) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) += 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_q) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) -= 0.1;
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     game_state->scene.camera.pitch_offset_deg -= 1;
@@ -250,15 +251,18 @@ void process_input_window(game_state_t *game_state)
                 }
                 if (event.key.keysym.sym == SDLK_UP) {
                     game_state->scene.camera.roll_offset_deg += 1;
+                    if (game_state->scene.camera.roll_offset_deg > 89) {
+                        game_state->scene.camera.roll_offset_deg = 89;
+                    }
                 }
                 if (event.key.keysym.sym == SDLK_DOWN) {
                     game_state->scene.camera.roll_offset_deg -= 1;
+                    if (game_state->scene.camera.roll_offset_deg < -89) {
+                        game_state->scene.camera.roll_offset_deg = -89;
+                    }
                 }
                 if (event.key.keysym.sym == SDLK_r) {
-                    game_state->scene.camera.roll_offset_deg = 0;
-                    game_state->scene.camera.pitch_offset_deg = 0;
-                    game_state->scene.camera.yaw_offset_deg = 0;
-                    mat2D_fill(game_state->scene.camera.offset_position, 0);
+                    reset_camera_pos(game_state);
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
@@ -395,6 +399,9 @@ void init_scene(game_state_t *game_state)
     game_state->scene.camera.init_position = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.init_position, 0);
 
+    game_state->scene.camera.current_position = mat2D_alloc(3, 1);
+    mat2D_fill(game_state->scene.camera.current_position, 0);
+
     game_state->scene.camera.offset_position = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.offset_position, 0);
 
@@ -424,7 +431,7 @@ void init_scene(game_state_t *game_state)
 
     game_state->scene.light_direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.light_direction, 0);
-    MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
+    // MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
     MAT2D_AT(game_state->scene.light_direction, 2, 0) = -1;
 
     game_state->scene.proj_mat = mat2D_alloc(4, 4);
@@ -433,3 +440,22 @@ void init_scene(game_state_t *game_state)
     game_state->scene.view_mat = mat2D_alloc(4, 4);
     ae_set_view_mat(game_state->scene.view_mat, game_state->scene.camera, game_state->scene.up_direction);
 }
+
+void reset_camera_pos(game_state_t *game_state)
+{
+    game_state->scene.camera.roll_offset_deg = 0;
+    game_state->scene.camera.pitch_offset_deg = 0;
+    game_state->scene.camera.yaw_offset_deg = 0;
+
+    mat2D_fill(game_state->scene.camera.offset_position, 0);
+
+    mat2D_fill(game_state->scene.camera.camera_x, 0);
+    MAT2D_AT(game_state->scene.camera.camera_x, 0, 0) = 1;
+    mat2D_fill(game_state->scene.camera.camera_y, 0);
+    MAT2D_AT(game_state->scene.camera.camera_y, 1, 0) = 1;
+    mat2D_fill(game_state->scene.camera.camera_z, 0);
+    MAT2D_AT(game_state->scene.camera.camera_z, 2, 0) = 1;
+
+    mat2D_copy(game_state->scene.camera.current_position, game_state->scene.camera.init_position);
+}
+

@@ -49,7 +49,7 @@ typedef struct {
     Mat2D ref_mat;
 } Mat2D_Minor;
 
-#if 1
+#if 0
 #define MAT2D_AT(m, i, j) (m).elements[mat2D_offset2d((m), (i), (j))]
 #define MAT2D_AT_UINT32(m, i, j) (m).elements[mat2D_offset2d_uint32((m), (i), (j))]
 #else /* use this macro for batter performance but no assertion */
@@ -443,11 +443,11 @@ void mat2D_set_rot_mat_z(Mat2D m, float angle_deg)
 void mat2D_set_DCM_zyx(Mat2D DCM, float yaw_deg, float pitch_deg, float roll_deg)
 {
     Mat2D RotZ = mat2D_alloc(3,3);
-    mat2D_set_rot_mat_z(RotZ, roll_deg);
+    mat2D_set_rot_mat_z(RotZ, yaw_deg);
     Mat2D RotY = mat2D_alloc(3,3);
     mat2D_set_rot_mat_y(RotY, pitch_deg);
     Mat2D RotX = mat2D_alloc(3,3);
-    mat2D_set_rot_mat_x(RotX, yaw_deg);
+    mat2D_set_rot_mat_x(RotX, roll_deg);
     Mat2D temp = mat2D_alloc(3,3);
 
     mat2D_dot(temp, RotY, RotZ);

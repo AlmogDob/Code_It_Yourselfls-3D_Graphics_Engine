@@ -19,8 +19,8 @@ Mesh temp_mesh;
 
 void setup(game_state_t *game_state)
 {
-    // game_state->to_limit_fps = 0;
-    game_state->const_fps = 30;
+    game_state->to_limit_fps = 0;
+    // game_state->const_fps = 30;
     theta = 0;  
 
     ada_init_array(Tri, temp_mesh);
@@ -31,7 +31,7 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./obj_files/cruiser/cruiser.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/bunny.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/teapot.obj", MAX_LEN_LINE);
-    strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
+    // strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/video_ship.obj", MAX_LEN_LINE);
 
     // strncpy(file_path, "./stl_files/plug.STL", MAX_LEN_LINE);
@@ -40,13 +40,13 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./stl_files/Stanford dragon highres.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Stanford dragon lowres.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Voronoi_Stanford_Bunny.STL", MAX_LEN_LINE);
-    // strncpy(file_path, "./stl_files/Lucy_120mm_simplified.STL", MAX_LEN_LINE);
+    strncpy(file_path, "./stl_files/Lucy_120mm_simplified.STL", MAX_LEN_LINE);
 
     game_state->scene.mesh = ae_get_mesh_from_file(file_path);
 
     dprintSIZE_T(game_state->scene.mesh.length);
     // ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, 0, 0, 180);
-    // ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, -90, 0, 0);
+    ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, -90, 0, 180);
     // ae_rotate_mesh_Euler_xyz(game_state->scene.mesh, 0, 180, 0);
     ae_normalize_mesh(game_state->scene.mesh);
 

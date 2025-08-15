@@ -91,6 +91,7 @@ typedef struct {
 
 typedef struct {
     Mat2D init_position;
+    Mat2D current_position;
     Mat2D offset_position;
     Mat2D direction;
     float z_near;
@@ -866,9 +867,7 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
     mat2D_transpose(DCM_trans, DCM);
 
     Mat2D temp_vec = mat2D_alloc(3, 1);
-    Mat2D camera_pos = mat2D_alloc(3, 1);
     Mat2D camera_direction = mat2D_alloc(3, 1);
-    mat2D_copy(camera_pos, camera.init_position);
 
     /* rotating camera_direction */
     mat2D_dot(camera_direction, DCM_trans, camera.direction);
@@ -900,14 +899,15 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
 
     mat2D_copy(temp_vec, camera.camera_x);
     mat2D_mult(temp_vec, MAT2D_AT(camera.offset_position, 0, 0));
-    mat2D_add(camera_pos, temp_vec);
+    mat2D_add(camera.current_position, temp_vec);
     mat2D_copy(temp_vec, camera.camera_y);
     mat2D_mult(temp_vec, MAT2D_AT(camera.offset_position, 1, 0));
-    mat2D_add(camera_pos, temp_vec);
+    mat2D_add(camera.current_position, temp_vec);
     mat2D_copy(temp_vec, camera.camera_z);
     mat2D_mult(temp_vec, MAT2D_AT(camera.offset_position, 2, 0));
-    mat2D_add(camera_pos, temp_vec);
+    mat2D_add(camera.current_position, temp_vec);
 
+    mat2D_fill(camera.offset_position, 0);
 
     MAT2D_AT(view_mat, 0, 0) = MAT2D_AT(new_right, 0, 0);
     MAT2D_AT(view_mat, 0, 1) = MAT2D_AT(new_up, 0, 0);
@@ -921,14 +921,13 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
     MAT2D_AT(view_mat, 2, 1) = MAT2D_AT(new_up, 2, 0);
     MAT2D_AT(view_mat, 2, 2) = MAT2D_AT(new_forward, 2, 0);
     MAT2D_AT(view_mat, 2, 3) = 0;
-    MAT2D_AT(view_mat, 3, 0) = - mat2D_dot_product(camera_pos, new_right);
-    MAT2D_AT(view_mat, 3, 1) = - mat2D_dot_product(camera_pos, new_up);
-    MAT2D_AT(view_mat, 3, 2) = - mat2D_dot_product(camera_pos, new_forward);
+    MAT2D_AT(view_mat, 3, 0) = - mat2D_dot_product(camera.current_position, new_right);
+    MAT2D_AT(view_mat, 3, 1) = - mat2D_dot_product(camera.current_position, new_up);
+    MAT2D_AT(view_mat, 3, 2) = - mat2D_dot_product(camera.current_position, new_forward);
     MAT2D_AT(view_mat, 3, 3) = 1;
 
 
     mat2D_free(temp_vec);
-    mat2D_free(camera_pos);
     mat2D_free(new_forward);
     mat2D_free(new_up);
     mat2D_free(new_right);
@@ -982,7 +981,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int win
 
     ae_calc_normal_to_tri(tri_normal, tri);
     ae_point_to_mat2D(tri.points[0], temp_camera2tri);
-    mat2D_sub(temp_camera2tri, scene->camera.init_position);
+    mat2D_sub(temp_camera2tri, scene->camera.current_position);
     mat2D_transpose(camera2tri, temp_camera2tri);
     mat2D_transpose(light_directio_traspose, light_direction);
 
