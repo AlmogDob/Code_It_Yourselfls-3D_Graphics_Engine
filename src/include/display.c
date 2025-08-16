@@ -27,11 +27,6 @@
 #define dprintD(expr) printf(#expr " = %g\n", expr)
 #define dprintSIZE_T(expr) printf(#expr " = %zu\n", expr)
 
-#define HexARGB_RGBA(x) (x>>(8*2)&0xFF), (x>>(8*1)&0xFF), (x>>(8*0)&0xFF), (x>>(8*3)&0xFF)
-#define HexARGB_RGBA_VAR(x) uint8_t r = (x>>(8*2)&0xFF); uint8_t g = (x>>(8*1)&0xFF); uint8_t b = (x>>(8*0)&0xFF); uint8_t a = (x>>(8*3)&0xFF)
-#define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
-#define RGB_hexRGB(r, g, b) (int)(0x010000*(r) + 0x000100*(g) + 0x000001*(b))
-
 #ifndef PI
     #ifndef __USE_MISC
     #define __USE_MISC
@@ -226,22 +221,22 @@ void process_input_window(game_state_t *game_state)
                     }
                 }
                 if (event.key.keysym.sym == SDLK_w) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) -= 0.05;
                 }
                 if (event.key.keysym.sym == SDLK_s) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 1, 0) += 0.05;
                 }
                 if (event.key.keysym.sym == SDLK_d) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) += 0.05;
                 }
                 if (event.key.keysym.sym == SDLK_a) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 0, 0) -= 0.05;
                 }
                 if (event.key.keysym.sym == SDLK_e) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) += 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) += 0.05;
                 }
                 if (event.key.keysym.sym == SDLK_q) {
-                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) -= 0.1;
+                    MAT2D_AT(game_state->scene.camera.offset_position, 2, 0) -= 0.05;
                 }
                 if (event.key.keysym.sym == SDLK_LEFT) {
                     game_state->scene.camera.pitch_offset_deg -= 1;
@@ -308,10 +303,10 @@ void update_window(game_state_t *game_state)
 void render_window(game_state_t *game_state)
 {
     if (game_state->to_clear_renderer) {
-        SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
-        SDL_RenderClear(game_state->renderer);
+        // SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
+        // SDL_RenderClear(game_state->renderer);
         // mat2D_fill(game_state->window_pixels_mat, 0x181818);
-        memset(game_state->window_pixels_mat.elements, 0x18, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
+        memset(game_state->window_pixels_mat.elements, 0x15, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
     }
     /*------------------------------------------------------------------------*/
 
@@ -400,7 +395,7 @@ void init_scene(game_state_t *game_state)
     mat2D_fill(game_state->scene.camera.init_position, 0);
 
     game_state->scene.camera.current_position = mat2D_alloc(3, 1);
-    mat2D_fill(game_state->scene.camera.current_position, 0);
+    mat2D_copy(game_state->scene.camera.current_position, game_state->scene.camera.init_position);
 
     game_state->scene.camera.offset_position = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.offset_position, 0);
@@ -431,7 +426,7 @@ void init_scene(game_state_t *game_state)
 
     game_state->scene.light_direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.light_direction, 0);
-    // MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
+    MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
     MAT2D_AT(game_state->scene.light_direction, 2, 0) = -1;
 
     game_state->scene.proj_mat = mat2D_alloc(4, 4);

@@ -21,8 +21,8 @@ void ars_fill_circle(Mat2D_uint32 screen_mat, float center_x, float center_y, fl
 void ars_draw_tri(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
 void ars_fill_tri_scanline_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
 void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
-void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
-void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
+void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
+void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
 
 void ars_draw_mesh(Mat2D_uint32 screen_mat, Mesh mesh, uint32_t color);
 void ars_fill_mesh_scanline_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, uint32_t color);
@@ -273,6 +273,7 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t 
     p1 = tri.points[1];
     p2 = tri.points[2];
 
+    /* draw only outline of the tri if there is no area */
     float w = edge_cross_point(p0, p1, p1, p2);
     if (!w) {
         ars_draw_tri(screen_mat, tri, color);
@@ -316,7 +317,7 @@ void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t 
     }
 }
 
-void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, uint32_t color)
+void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity)
 {
     /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
 
@@ -362,14 +363,22 @@ void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, 
                 uint8_t current_g = g*alpha + 0xaa*beta + 0x22*gamma;
                 uint8_t current_b = b*alpha + 0xaa*beta + 0x22*gamma;
 
-                ars_draw_point(screen_mat, x, y, ARGB_hexARGB(a, current_r, current_g, current_b));
+                float rf = current_r * light_intensity;
+                float gf = current_g * light_intensity;
+                float bf = current_b * light_intensity;
+                uint8_t r8 = (uint8_t)fmaxf(0, fminf(255, rf));
+                uint8_t g8 = (uint8_t)fmaxf(0, fminf(255, gf));
+                uint8_t b8 = (uint8_t)fmaxf(0, fminf(255, bf));
+                (void)a;
+
+                ars_draw_point(screen_mat, x, y, RGB_hexRGB(r8, g8, b8));
             }
         }
     }
 }
 
 /* Works good but very slow! (the dynamic allocation is bad for performance)*/
-void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, uint32_t color)
+void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity)
 {
     /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
     Mat2D p0       = mat2D_alloc(3, 1);
@@ -430,8 +439,16 @@ void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri
             float w1 = MAT2D_AT(cross12p, 2, 0);
             float w2 = MAT2D_AT(cross20p, 2, 0);
 
-            if (w0 * w > 0 && w1 * w > 0 &&  w2 * w > 0) {
-                ars_draw_point(screen_mat, x, y, color);
+            if (w0 * w >= 0 && w1 * w >= 0 &&  w2 * w >= 0) {
+                HexARGB_RGBA_VAR(color);
+                float rf = r * light_intensity;
+                float gf = g * light_intensity;
+                float bf = b * light_intensity;
+                uint8_t r8 = (uint8_t)fmaxf(0, fminf(255, rf));
+                uint8_t g8 = (uint8_t)fmaxf(0, fminf(255, gf));
+                uint8_t b8 = (uint8_t)fmaxf(0, fminf(255, bf));
+                (void)a;
+                ars_draw_point(screen_mat, x, y, RGB_hexRGB(r8, g8, b8));
             }
         }
     }
@@ -485,6 +502,9 @@ void ars_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, int co
         }
         if (tri.to_draw) {
             ars_fill_tri_Pinedas_rasterizer(screen_mat, tri, color, tri.light_intensity);
+            // void ars_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
+            // void ars_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
+            // void ars_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, uint32_t color, float light_intensity);
         }
     }
 }

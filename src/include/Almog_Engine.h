@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <float.h>
+#include <stdint.h>
 #include <errno.h>
 #include <string.h>
 
@@ -43,6 +44,11 @@
 #ifndef STL_ATTRIBUTE_BITS_SIZE
 #define STL_ATTRIBUTE_BITS_SIZE 2
 #endif
+
+#define HexARGB_RGBA(x) (x>>(8*2)&0xFF), (x>>(8*1)&0xFF), (x>>(8*0)&0xFF), (x>>(8*3)&0xFF)
+#define HexARGB_RGBA_VAR(x) uint8_t r = (x>>(8*2)&0xFF); uint8_t g = (x>>(8*1)&0xFF); uint8_t b = (x>>(8*0)&0xFF); uint8_t a = (x>>(8*3)&0xFF)
+#define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
+#define RGB_hexRGB(r, g, b) (int)(0x010000*(r) + 0x000100*(g) + 0x000001*(b))
 
 #ifndef POINT
 #define POINT
@@ -121,6 +127,7 @@ Tri ae_create_tri(Point p1, Point p2, Point p3);
 void ae_create_copy_of_mesh(Mesh *des, Tri *src_elements, size_t len);
 Mesh ae_create_cube(const size_t len);
 void ae_point_to_mat2D(Point p, Mat2D m);
+Point ae_mat2D_to_point(Mat2D m);
 Mesh ae_get_mesh_from_obj_file(char *file_path);
 Mesh ae_get_mesh_from_stl_file(char *file_path);
 
@@ -138,7 +145,8 @@ void ae_normalize_mesh(Mesh mesh);
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up);
-Point ae_project_point_world2screen(Mat2D proj_mat, Mat2D view_mat, Point src);
+Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
+Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri);
 Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 
@@ -379,7 +387,12 @@ void ae_point_to_mat2D(Point p, Mat2D m)
         MAT2D_AT(m, 0, 1) = p.y;
         MAT2D_AT(m, 0, 2) = p.z;
     }
+}
 
+Point ae_mat2D_to_point(Mat2D m)
+{
+    Point res = {.x = MAT2D_AT(m, 0, 0), .y = MAT2D_AT(m, 1, 0), .z = MAT2D_AT(m, 2, 0)};
+    return res;
 }
 
 Mesh ae_get_mesh_from_file(char *file_path)
@@ -935,13 +948,10 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
     mat2D_free(DCM_trans);
 }
 
-Point ae_project_point_world2screen(Mat2D proj_mat, Mat2D view_mat, Point src)
+Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
 {
     Mat2D src_point_mat = mat2D_alloc(1,4);
-    // mat2D_fill(src_point_mat, 0);
-    Mat2D temp_des_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
-    // mat2D_fill(des_point_mat, 0);
     Point des;
 
     MAT2D_AT(src_point_mat, 0, 0) = src.x;
@@ -949,8 +959,7 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Mat2D view_mat, Point src)
     MAT2D_AT(src_point_mat, 0, 2) = src.z;
     MAT2D_AT(src_point_mat, 0, 3) = 1;
 
-    mat2D_dot(temp_des_point_mat, src_point_mat, view_mat);
-    mat2D_dot(des_point_mat, temp_des_point_mat, proj_mat);
+    mat2D_dot(des_point_mat, src_point_mat, proj_mat);
 
     if (MAT2D_AT(des_point_mat, 0, 3)) {
         des.x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
@@ -964,9 +973,31 @@ Point ae_project_point_world2screen(Mat2D proj_mat, Mat2D view_mat, Point src)
 
     mat2D_free(src_point_mat);
     mat2D_free(des_point_mat);
-    mat2D_free(temp_des_point_mat);
 
     return des;
+}
+
+Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri)
+{
+    Mat2D src_point_mat = mat2D_alloc(1,4);
+    Mat2D des_point_mat = mat2D_alloc(1,4);
+    Point des;
+
+    for (int i = 0; i < 3; i++) {
+        MAT2D_AT(src_point_mat, 0, 0) = tri.points[i].x;
+        MAT2D_AT(src_point_mat, 0, 1) = tri.points[i].y;
+        MAT2D_AT(src_point_mat, 0, 2) = tri.points[i].z;
+        MAT2D_AT(src_point_mat, 0, 3) = 1;
+
+        mat2D_dot(des_point_mat, src_point_mat, view_mat);
+
+        tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0);
+        tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1);
+        tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2);
+    }
+
+    mat2D_free(src_point_mat);
+    mat2D_free(des_point_mat);
 }
 
 Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
@@ -976,7 +1007,6 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int win
     Mat2D camera2tri = mat2D_alloc(1, 3);
     Mat2D light_directio_traspose = mat2D_alloc(1, 3);
     Mat2D dot_product = mat2D_alloc(1, 1);
-    // mat2D_fill(dot_product, 0);
     Tri des_tri;
 
     ae_calc_normal_to_tri(tri_normal, tri);
@@ -987,29 +1017,24 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int win
 
     /* calc lighting intensity of tri */
     MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(light_directio_traspose, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(light_directio_traspose, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(light_directio_traspose, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
-    // mat2D_dot(dot_product, light_directio_traspose, tri_normal);
     des_tri.light_intensity = MAT2D_AT(dot_product, 0, 0);
 
-    // if (des_tri.light_intensity > 1) {
-    //     printf("%f", des_tri.light_intensity);
-    // }
-
-    if (des_tri.light_intensity < 0) {
-        des_tri.light_intensity = 0.3;
+    if (des_tri.light_intensity <= 0.2) {
+        des_tri.light_intensity = 0.2;
     }
 
     /* calc if tri is visible to the camera */
     MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(camera2tri, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(camera2tri, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(camera2tri, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
-    // mat2D_dot(dot_product, camera2tri, tri_normal);
-
     if (MAT2D_AT(dot_product, 0, 0) < 0) {
         des_tri.to_draw = true;
     } else {
         des_tri.to_draw = false;
     }
 
+    Tri view_tri = ae_transform_tri_to_view(view_mat, tri);
+
     for (int i = 0; i < 3; i++) {
-        des_tri.points[i] = ae_project_point_world2screen(proj_mat, view_mat, tri.points[i]);
+        des_tri.points[i] = ae_project_point_world2screen(proj_mat, view_tri.points[i]);
 
         /* scale into view */
         des_tri.points[i].x += 1;

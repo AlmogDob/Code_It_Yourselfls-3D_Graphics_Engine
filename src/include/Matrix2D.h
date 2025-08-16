@@ -69,6 +69,7 @@ typedef struct {
 #define MAT2D_PRINT(m) mat2D_print(m, #m, 0)
 #define MAT2D_PRINT_AS_COL(m) mat2D_print_as_col(m, #m, 0)
 #define MAT2D_MINOR_PRINT(mm) mat2D_minor_print(mm, #mm, 0)
+#define mat2D_normalize(m) mat2D_mult((m), 1.0 / mat2D_calc_norma((m)))
 
 double rand_double(void);
 
