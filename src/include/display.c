@@ -84,6 +84,7 @@ void render(game_state_t *game_state);
 
 void check_window_mat_size(game_state_t *game_state);
 void copy_mat_to_surface_RGB(game_state_t *game_state);
+void init_camera(game_state_t *game_state);
 void init_scene(game_state_t *game_state);
 void reset_camera_pos(game_state_t *game_state);
 
@@ -384,11 +385,11 @@ void copy_mat_to_surface_RGB(game_state_t *game_state)
     SDL_UnlockSurface(game_state->window_surface);
 }
 
-void init_scene(game_state_t *game_state)
+void init_camera(game_state_t *game_state)
 {
     game_state->scene.camera.z_near       = 0.1;
     game_state->scene.camera.z_far        = 1000;
-    game_state->scene.camera.fov_deg      = 60;
+    game_state->scene.camera.fov_deg      = 90;
     game_state->scene.camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
 
     game_state->scene.camera.init_position = mat2D_alloc(3, 1);
@@ -419,6 +420,11 @@ void init_scene(game_state_t *game_state)
     game_state->scene.camera.camera_z = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.camera_z, 0);
     MAT2D_AT(game_state->scene.camera.camera_z, 2, 0) = 1;
+}
+
+void init_scene(game_state_t *game_state)
+{
+    init_camera(game_state);
 
     game_state->scene.up_direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.up_direction, 0);

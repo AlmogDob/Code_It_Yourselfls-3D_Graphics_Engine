@@ -95,6 +95,21 @@ typedef struct {
     Tri *elements;
 } Mesh_static;
 
+// typedef struct {
+//     Mat2D z_near_p;
+//     Mat2D z_near_n;
+//     Mat2D z_far_p;
+//     Mat2D z_far_n;
+//     Mat2D right_p;
+//     Mat2D right_n;
+//     Mat2D left_p;
+//     Mat2D left_n;
+//     Mat2D top_p;
+//     Mat2D top_n;
+//     Mat2D bottom_p;
+//     Mat2D bottom_n;
+// } Camera_prism;
+
 typedef struct {
     Mat2D init_position;
     Mat2D current_position;
@@ -104,6 +119,7 @@ typedef struct {
     float z_far;
     float fov_deg;
     float aspect_ratio;
+    // Camera_prism camera_prism;
     float roll_offset_deg;
     float pitch_offset_deg;
     float yaw_offset_deg;
@@ -143,11 +159,15 @@ void ae_set_mesh_bounding_box(Mesh mesh, float *x_min, float *x_max, float *y_mi
 void ae_set_tri_center_zmin_zmax(Tri *tri);
 void ae_normalize_mesh(Mesh mesh);
 
+Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat2D line_end);
+float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n);
+int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_out1, Tri *tri_out2);
+
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up);
-Point ae_project_point_world2screen(Mat2D proj_mat, Point src);
+Point ae_project_point_view2screen(Mat2D proj_mat, Point src);
 Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri);
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
+Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 
 void ae_swap_tri(Tri *v, int i, int j);
@@ -855,6 +875,130 @@ void ae_normalize_mesh(Mesh mesh)
     }
 }
 
+Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat2D line_end)
+{
+    mat2D_normalize(plane_n);
+    float plane_d = - mat2D_dot_product(plane_n, plane_p);
+    float ad = mat2D_dot_product(line_start, plane_n);
+    float bd = mat2D_dot_product(line_end, plane_n);
+    float t  = (- plane_d - ad) / (bd - ad);
+    mat2D_sub(line_end, line_start);
+    Mat2D line_start_to_end = line_end;
+    mat2D_mult(line_start_to_end, t);
+    Mat2D line_to_intersection = line_start_to_end;
+    
+    Mat2D intersection_p = mat2D_alloc(3, 1);
+    mat2D_fill(intersection_p, 0);
+    mat2D_add(intersection_p, line_start);
+    mat2D_add(intersection_p, line_to_intersection);
+
+    Point ans_p = ae_mat2D_to_point(intersection_p);
+
+    mat2D_free(intersection_p);
+
+    return ans_p;
+}
+
+/* signed distance from point to plane */
+float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n)
+{
+    mat2D_normalize(plane_n);
+    Mat2D p_mat2D = mat2D_alloc(3, 1);
+    ae_point_to_mat2D(p, p_mat2D);
+
+    float res = mat2D_dot_product(plane_n, p_mat2D) - mat2D_dot_product(plane_n, plane_p); 
+
+    mat2D_free(p_mat2D);
+
+    return res;
+}
+
+/* returns number of inside triangles
+return -1 on error */
+int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_out1, Tri *tri_out2)
+{
+    mat2D_normalize(plane_n);
+
+    /* if the signed distance is positive, the point lies on the "inside" of the plane */
+    Point inside_points[3];
+    Point outside_points[3];
+    int inside_points_count = 0;
+    int outside_points_count = 0;
+    
+    /* calc signed distance of each point of tri_in */
+    float d0 = signed_dist_point_and_plane(tri_in.points[0], plane_p, plane_n);
+    float d1 = signed_dist_point_and_plane(tri_in.points[1], plane_p, plane_n);
+    float d2 = signed_dist_point_and_plane(tri_in.points[2], plane_p, plane_n);
+
+    if (d0 >= 0) {
+        inside_points[inside_points_count++] = tri_in.points[0];
+    } else {
+        outside_points[outside_points_count++] = tri_in.points[0];
+    }
+    if (d1 >= 0) {
+        inside_points[inside_points_count++] = tri_in.points[1];
+    } else {
+        outside_points[outside_points_count++] = tri_in.points[1];
+    }
+    if (d2 >= 0) {
+        inside_points[inside_points_count++] = tri_in.points[2];
+    } else {
+        outside_points[outside_points_count++] = tri_in.points[2];
+    }
+
+    /* classifying the triangle points */
+    if (inside_points_count == 0) {
+        return 0;
+    } else if (inside_points_count == 3) {
+        *tri_out1 = tri_in;
+        return 1;
+    } else if (inside_points_count == 1 && outside_points_count == 2) {
+        Mat2D line_start = mat2D_alloc(3, 1);
+        Mat2D line_end   = mat2D_alloc(3, 1);
+
+        *tri_out1 = tri_in;
+        
+        (*tri_out1).points[0] = inside_points[0];
+
+        ae_point_to_mat2D(inside_points[0], line_start);
+        ae_point_to_mat2D(outside_points[0], line_end);
+        (*tri_out1).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+
+        ae_point_to_mat2D(inside_points[0], line_start);
+        ae_point_to_mat2D(outside_points[1], line_end);
+        (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+
+        mat2D_free(line_start);
+        mat2D_free(line_end);
+
+        return 1;
+    } else if (inside_points_count == 2 && outside_points_count == 1) {
+        Mat2D line_start = mat2D_alloc(3, 1);
+        Mat2D line_end   = mat2D_alloc(3, 1);
+        
+        *tri_out1 = tri_in;
+        *tri_out2 = tri_in;
+
+        (*tri_out1).points[0] = inside_points[0];
+        (*tri_out1).points[1] = inside_points[1];
+        ae_point_to_mat2D(inside_points[0], line_start);
+        ae_point_to_mat2D(outside_points[0], line_end);
+        (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+
+        (*tri_out2).points[0] = inside_points[1];
+        ae_point_to_mat2D(inside_points[1], line_start);
+        ae_point_to_mat2D(outside_points[0], line_end);
+        (*tri_out2).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+        (*tri_out2).points[2] = (*tri_out1).points[2];
+
+        mat2D_free(line_start);
+        mat2D_free(line_end);
+
+        return 2;
+    }
+    return -1;
+}
+
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far)
 {
     AE_ASSERT(4 == proj_mat.cols); 
@@ -948,7 +1092,7 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
     mat2D_free(DCM_trans);
 }
 
-Point ae_project_point_world2screen(Mat2D proj_mat, Point src)
+Point ae_project_point_view2screen(Mat2D proj_mat, Point src)
 {
     Mat2D src_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
@@ -981,7 +1125,8 @@ Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri)
 {
     Mat2D src_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
-    Point des;
+
+    Tri des_tri;
 
     for (int i = 0; i < 3; i++) {
         MAT2D_AT(src_point_mat, 0, 0) = tri.points[i].x;
@@ -991,16 +1136,24 @@ Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri)
 
         mat2D_dot(des_point_mat, src_point_mat, view_mat);
 
-        tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0);
-        tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1);
-        tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2);
+        if (MAT2D_AT(des_point_mat, 0, 3)) {
+            des_tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
+            des_tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1) / MAT2D_AT(des_point_mat, 0, 3);
+            des_tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2) / MAT2D_AT(des_point_mat, 0, 3);
+        } else {
+            des_tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0);
+            des_tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1);
+            des_tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2);
+        }
     }
 
     mat2D_free(src_point_mat);
     mat2D_free(des_point_mat);
+
+    return des_tri;
 }
 
-Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
+Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
     Mat2D tri_normal = mat2D_alloc(3, 1);
     Mat2D temp_camera2tri = mat2D_alloc(3, 1);
@@ -1031,18 +1184,56 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int win
         des_tri.to_draw = false;
     }
 
-    Tri view_tri = ae_transform_tri_to_view(view_mat, tri);
+    /* transform tri to camera view */
+    tri = ae_transform_tri_to_view(view_mat, tri);
 
-    for (int i = 0; i < 3; i++) {
-        des_tri.points[i] = ae_project_point_world2screen(proj_mat, view_tri.points[i]);
+    // Mesh temp_tri_array; 
+    // ada_init_array(Tri, temp_tri_array);
+    // ada_appand(Tri, temp_tri_array, tri);
+    /* clip tir */
+    Tri clipped_tri1 = {0};
+    Tri clipped_tri2 = {0};
+    Mat2D z_plane_p = mat2D_alloc(3, 1);
+    Mat2D z_plane_n = mat2D_alloc(3, 1);
+    mat2D_fill(z_plane_p, 0);
+    mat2D_fill(z_plane_n, 0);
+    MAT2D_AT(z_plane_p, 2, 0) = scene->camera.z_near+0.01;
+    MAT2D_AT(z_plane_n, 2, 0) = 1;
 
-        /* scale into view */
-        des_tri.points[i].x += 1;
-        des_tri.points[i].y += 1;
-
-        des_tri.points[i].x *= 0.5f * window_w;
-        des_tri.points[i].y *= 0.5f * window_h;
+    int num_clipped_tri = ae_tri_clip_with_plane(tri, z_plane_p, z_plane_n, &clipped_tri1, &clipped_tri2);
+    Mesh temp_tri_array; 
+    ada_init_array(Tri, temp_tri_array);
+    if (num_clipped_tri == -1) {
+        fprintf(stderr, "%s:%d: [Error] problem with clipping triangles\n", __FILE__, __LINE__);
+        exit(1);
+    } else if (num_clipped_tri == 0) {
+        ;
+    } else if (num_clipped_tri == 1) {
+        ada_appand(Tri, temp_tri_array, clipped_tri1);
+    } else if (num_clipped_tri == 2) {
+        ada_appand(Tri, temp_tri_array, clipped_tri1);
+        ada_appand(Tri, temp_tri_array, clipped_tri2);
     }
+    mat2D_free(z_plane_p);
+    mat2D_free(z_plane_n);
+
+    for (size_t temp_tri_index = 0; temp_tri_index < temp_tri_array.length; temp_tri_index++) {
+        /* project tri to screen */
+        for (int i = 0; i < 3; i++) {
+            des_tri.points[i] = ae_project_point_view2screen(proj_mat, temp_tri_array.elements[temp_tri_index].points[i]);
+
+            /* scale into view */
+            des_tri.points[i].x += 1;
+            des_tri.points[i].y += 1;
+
+            des_tri.points[i].x *= 0.5f * window_w;
+            des_tri.points[i].y *= 0.5f * window_h;
+
+        }
+        ae_set_tri_center_zmin_zmax(&des_tri);
+        temp_tri_array.elements[temp_tri_index] = des_tri;
+    }
+
 
     mat2D_free(tri_normal);
     mat2D_free(temp_camera2tri);
@@ -1050,9 +1241,7 @@ Tri ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int win
     mat2D_free(light_directio_traspose);
     mat2D_free(dot_product);
 
-    ae_set_tri_center_zmin_zmax(&des_tri);
-
-    return des_tri;
+    return temp_tri_array;
 }
 
 void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
@@ -1060,11 +1249,14 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
     Mesh temp_des = *des;
     size_t i;
     for (i = 0; i < src.length; i++) {
-        Tri temp_tri;
-        temp_tri = ae_project_tri_world2screen(proj_mat, view_mat, src.elements[i], window_w, window_h, light_direction, scene);
-        // AE_PRINT_TRI(temp_tri);
-        
-        ada_appand(Tri, temp_des, temp_tri);
+        Mesh temp_tri_array = ae_project_tri_world2screen(proj_mat, view_mat, src.elements[i], window_w, window_h, light_direction, scene);
+
+        for (size_t tri_index = 0; tri_index < temp_tri_array.length; tri_index++) {
+            Tri temp_tri = temp_tri_array.elements[tri_index];
+            ada_appand(Tri, temp_des, temp_tri);
+        }
+
+        free(temp_tri_array.elements);
     }
     ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
 
