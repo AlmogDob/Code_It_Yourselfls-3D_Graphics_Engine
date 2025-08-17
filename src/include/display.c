@@ -6,11 +6,11 @@
 #include "Almog_Engine.h"
 
 #ifndef WINDOW_WIDTH
-#define WINDOW_WIDTH (16 * 50)
+#define WINDOW_WIDTH (16 * 60)
 #endif
 
 #ifndef WINDOW_HEIGHT
-#define WINDOW_HEIGHT (9 * 50)
+#define WINDOW_HEIGHT (9 * 60)
 #endif
 
 #ifndef FPS
@@ -307,7 +307,7 @@ void render_window(game_state_t *game_state)
         // SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
         // SDL_RenderClear(game_state->renderer);
         // mat2D_fill(game_state->window_pixels_mat, 0x181818);
-        memset(game_state->window_pixels_mat.elements, 0x15, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
+        memset(game_state->window_pixels_mat.elements, 0x18, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
     }
     /*------------------------------------------------------------------------*/
 
@@ -389,7 +389,7 @@ void init_camera(game_state_t *game_state)
 {
     game_state->scene.camera.z_near       = 0.1;
     game_state->scene.camera.z_far        = 1000;
-    game_state->scene.camera.fov_deg      = 90;
+    game_state->scene.camera.fov_deg      = 60;
     game_state->scene.camera.aspect_ratio = (float)game_state->window_h / (float)game_state->window_w;
 
     game_state->scene.camera.init_position = mat2D_alloc(3, 1);

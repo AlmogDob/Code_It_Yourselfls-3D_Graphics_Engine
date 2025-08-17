@@ -95,20 +95,20 @@ typedef struct {
     Tri *elements;
 } Mesh_static;
 
-// typedef struct {
-//     Mat2D z_near_p;
-//     Mat2D z_near_n;
-//     Mat2D z_far_p;
-//     Mat2D z_far_n;
-//     Mat2D right_p;
-//     Mat2D right_n;
-//     Mat2D left_p;
-//     Mat2D left_n;
-//     Mat2D top_p;
-//     Mat2D top_n;
-//     Mat2D bottom_p;
-//     Mat2D bottom_n;
-// } Camera_prism;
+typedef struct {
+    Mat2D z_near_p;
+    Mat2D z_near_n;
+    Mat2D z_far_p;
+    Mat2D z_far_n;
+    Mat2D right_p;
+    Mat2D right_n;
+    Mat2D left_p;
+    Mat2D left_n;
+    Mat2D top_p;
+    Mat2D top_n;
+    Mat2D bottom_p;
+    Mat2D bottom_n;
+} Camera_prism;
 
 typedef struct {
     Mat2D init_position;
@@ -119,7 +119,7 @@ typedef struct {
     float z_far;
     float fov_deg;
     float aspect_ratio;
-    // Camera_prism camera_prism;
+    Camera_prism camera_prism;
     float roll_offset_deg;
     float pitch_offset_deg;
     float yaw_offset_deg;
@@ -908,6 +908,8 @@ float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n)
 
     float res = mat2D_dot_product(plane_n, p_mat2D) - mat2D_dot_product(plane_n, plane_p); 
 
+    // float res = MAT2D_AT(plane_n, 0, 0) * p.x + MAT2D_AT(plane_n, 1, 0) * p.y + MAT2D_AT(plane_n, 2, 0) * p.z - (MAT2D_AT(plane_n, 0, 0) * MAT2D_AT(plane_p, 0, 0) + MAT2D_AT(plane_n, 1, 0) * MAT2D_AT(plane_p, 1, 0) + MAT2D_AT(plane_n, 2, 0) * MAT2D_AT(plane_p, 2, 0)); 
+
     mat2D_free(p_mat2D);
 
     return res;
@@ -1172,8 +1174,8 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
     MAT2D_AT(dot_product, 0, 0) = MAT2D_AT(light_directio_traspose, 0, 0) * MAT2D_AT(tri_normal, 0, 0) + MAT2D_AT(light_directio_traspose, 0, 1) * MAT2D_AT(tri_normal, 1, 0) + MAT2D_AT(light_directio_traspose, 0, 2) * MAT2D_AT(tri_normal, 2, 0);
     des_tri.light_intensity = MAT2D_AT(dot_product, 0, 0);
 
-    if (des_tri.light_intensity <= 0.2) {
-        des_tri.light_intensity = 0.2;
+    if (des_tri.light_intensity <= 0.1) {
+        des_tri.light_intensity = 0.1;
     }
 
     /* calc if tri is visible to the camera */
@@ -1204,7 +1206,7 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
     Mesh temp_tri_array; 
     ada_init_array(Tri, temp_tri_array);
     if (num_clipped_tri == -1) {
-        fprintf(stderr, "%s:%d: [Error] problem with clipping triangles\n", __FILE__, __LINE__);
+        fprintf(stderr, "%s:%d: [error] problem with clipping triangles\n", __FILE__, __LINE__);
         exit(1);
     } else if (num_clipped_tri == 0) {
         ;
@@ -1259,6 +1261,76 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
         free(temp_tri_array.elements);
     }
     ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
+
+    /* clip tir */
+    Mat2D top_p = mat2D_alloc(3, 1);
+    Mat2D top_n = mat2D_alloc(3, 1);
+    mat2D_fill(top_p, 0);
+    mat2D_fill(top_n, 0);
+    MAT2D_AT(top_n, 1, 0) = 1;
+
+    Mat2D bottom_p = mat2D_alloc(3, 1);
+    Mat2D bottom_n = mat2D_alloc(3, 1);
+    mat2D_fill(bottom_p, 0);
+    mat2D_fill(bottom_n, 0);
+    MAT2D_AT(bottom_p, 1, 0) = window_h-1;
+    MAT2D_AT(bottom_n, 1, 0) = -1;
+
+    Mat2D left_p = mat2D_alloc(3, 1);
+    Mat2D left_n = mat2D_alloc(3, 1);
+    mat2D_fill(left_p, 0);
+    mat2D_fill(left_n, 0);
+    MAT2D_AT(left_n, 0, 0) = 1;
+
+    Mat2D right_p = mat2D_alloc(3, 1);
+    Mat2D right_n = mat2D_alloc(3, 1);
+    mat2D_fill(right_p, 0);
+    mat2D_fill(right_n, 0);
+    MAT2D_AT(right_p, 1, 0) = window_w-1;
+    MAT2D_AT(right_n, 1, 0) = -1;
+
+    for (size_t tri_index = 0; tri_index < temp_des.length; tri_index++) {
+        for (int plane_number = 0; plane_number < 4; plane_number++) {
+            Tri clipped_tri1 = {0};
+            Tri clipped_tri2 = {0};
+            int num_clipped_tri;
+            switch (plane_number) {
+                case 0:
+                    num_clipped_tri = ae_tri_clip_with_plane(temp_des.elements[tri_index], top_p, top_n, &clipped_tri1, &clipped_tri2);
+                break;
+                case 1:
+                    num_clipped_tri = ae_tri_clip_with_plane(temp_des.elements[tri_index], right_p, right_n, &clipped_tri1, &clipped_tri2);
+                break;
+                case 2:
+                    num_clipped_tri = ae_tri_clip_with_plane(temp_des.elements[tri_index], bottom_p, bottom_n, &clipped_tri1, &clipped_tri2);
+                break;
+                case 3:
+                    num_clipped_tri = ae_tri_clip_with_plane(temp_des.elements[tri_index], left_p, left_n, &clipped_tri1, &clipped_tri2);
+                break;
+            }
+            if (num_clipped_tri == -1) {
+                fprintf(stderr, "%s:%d: [error] problem with clipping triangles\n", __FILE__, __LINE__);
+                exit(1);
+            } else if (num_clipped_tri == 0) {
+                ada_remove(Tri, temp_des, tri_index);
+            } else if (num_clipped_tri == 1) {
+                temp_des.elements[tri_index] = clipped_tri1;
+            } else if (num_clipped_tri == 2) {
+                temp_des.elements[tri_index] = clipped_tri1;
+                ada_insert(Tri, temp_des, clipped_tri2, tri_index+1);
+            }
+        }
+    }
+
+
+    mat2D_free(top_p);
+    mat2D_free(top_n);
+    mat2D_free(bottom_p);
+    mat2D_free(bottom_n);
+    mat2D_free(left_p);
+    mat2D_free(left_n);
+    mat2D_free(right_p);
+    mat2D_free(right_n);
 
     *des = temp_des;
 }
