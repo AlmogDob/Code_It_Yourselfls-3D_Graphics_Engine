@@ -902,15 +902,15 @@ Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat
 /* signed distance from point to plane */
 float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n)
 {
-    mat2D_normalize(plane_n);
-    Mat2D p_mat2D = mat2D_alloc(3, 1);
-    ae_point_to_mat2D(p, p_mat2D);
+    // mat2D_normalize(plane_n);
+    // Mat2D p_mat2D = mat2D_alloc(3, 1);
+    // ae_point_to_mat2D(p, p_mat2D);
 
-    float res = mat2D_dot_product(plane_n, p_mat2D) - mat2D_dot_product(plane_n, plane_p); 
+    // float res = mat2D_dot_product(plane_n, p_mat2D) - mat2D_dot_product(plane_n, plane_p); 
 
-    // float res = MAT2D_AT(plane_n, 0, 0) * p.x + MAT2D_AT(plane_n, 1, 0) * p.y + MAT2D_AT(plane_n, 2, 0) * p.z - (MAT2D_AT(plane_n, 0, 0) * MAT2D_AT(plane_p, 0, 0) + MAT2D_AT(plane_n, 1, 0) * MAT2D_AT(plane_p, 1, 0) + MAT2D_AT(plane_n, 2, 0) * MAT2D_AT(plane_p, 2, 0)); 
+    float res = MAT2D_AT(plane_n, 0, 0) * p.x + MAT2D_AT(plane_n, 1, 0) * p.y + MAT2D_AT(plane_n, 2, 0) * p.z - (MAT2D_AT(plane_n, 0, 0) * MAT2D_AT(plane_p, 0, 0) + MAT2D_AT(plane_n, 1, 0) * MAT2D_AT(plane_p, 1, 0) + MAT2D_AT(plane_n, 2, 0) * MAT2D_AT(plane_p, 2, 0)); 
 
-    mat2D_free(p_mat2D);
+    // mat2D_free(p_mat2D);
 
     return res;
 }

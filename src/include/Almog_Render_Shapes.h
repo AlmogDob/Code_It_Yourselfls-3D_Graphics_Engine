@@ -491,10 +491,8 @@ void ars_fill_mesh_scanline_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, uint3
 
 void ars_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh, int color)
 {
-    bool rand_color;
-    if (-1 == color) {
-        rand_color = true;
-    }
+    bool rand_color = (color == -1);
+
     for (size_t i = 0; i < mesh.length; i++) {
         Tri tri = mesh.elements[i];
         if (rand_color) {

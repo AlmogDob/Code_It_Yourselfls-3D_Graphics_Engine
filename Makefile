@@ -1,5 +1,6 @@
-CFLAGS = -Wall -Wextra -lm -lSDL2 -lSDL2_ttf
 CCHECKS = -fsanitize=address
+CWARNINGS = -Wall -Wextra -Wuninitialized 
+CFLAGS = $(CWARNINGS) -lm -lSDL2 -lSDL2_ttf
 
 main: build_main run_main clean_main  
 	@echo ./build/main done
