@@ -1260,36 +1260,44 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
 
         free(temp_tri_array.elements);
     }
-    ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
 
     /* clip tir */
+    int offset = 50;
     Mat2D top_p = mat2D_alloc(3, 1);
     Mat2D top_n = mat2D_alloc(3, 1);
     mat2D_fill(top_p, 0);
     mat2D_fill(top_n, 0);
+    MAT2D_AT(top_p, 1, 0) = 0 + offset;
     MAT2D_AT(top_n, 1, 0) = 1;
 
     Mat2D bottom_p = mat2D_alloc(3, 1);
     Mat2D bottom_n = mat2D_alloc(3, 1);
     mat2D_fill(bottom_p, 0);
     mat2D_fill(bottom_n, 0);
-    MAT2D_AT(bottom_p, 1, 0) = window_h-1;
+    MAT2D_AT(bottom_p, 1, 0) = window_h - offset;
     MAT2D_AT(bottom_n, 1, 0) = -1;
 
     Mat2D left_p = mat2D_alloc(3, 1);
     Mat2D left_n = mat2D_alloc(3, 1);
     mat2D_fill(left_p, 0);
     mat2D_fill(left_n, 0);
+    MAT2D_AT(left_p, 0, 0) = 0 + offset;
     MAT2D_AT(left_n, 0, 0) = 1;
 
     Mat2D right_p = mat2D_alloc(3, 1);
     Mat2D right_n = mat2D_alloc(3, 1);
     mat2D_fill(right_p, 0);
     mat2D_fill(right_n, 0);
-    MAT2D_AT(right_p, 1, 0) = window_w-1;
-    MAT2D_AT(right_n, 1, 0) = -1;
+    MAT2D_AT(right_p, 0, 0) = window_w - offset;
+    MAT2D_AT(right_n, 0, 0) = -1;
 
-    for (size_t tri_index = 0; tri_index < temp_des.length; tri_index++) {
+    for (int tri_index = 0; tri_index < (int)temp_des.length; tri_index++) {
+        if (temp_des.length == 0) {
+            break;
+        }
+        if (temp_des.elements[tri_index].to_draw == false) {
+            continue;
+        }
         for (int plane_number = 0; plane_number < 4; plane_number++) {
             Tri clipped_tri1 = {0};
             Tri clipped_tri2 = {0};
@@ -1312,16 +1320,21 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
                 fprintf(stderr, "%s:%d: [error] problem with clipping triangles\n", __FILE__, __LINE__);
                 exit(1);
             } else if (num_clipped_tri == 0) {
-                ada_remove(Tri, temp_des, tri_index);
+                ada_remove_unordered(Tri, temp_des, tri_index);
+                tri_index--;
+                tri_index = (int)fmaxf(tri_index, 0);
             } else if (num_clipped_tri == 1) {
                 temp_des.elements[tri_index] = clipped_tri1;
             } else if (num_clipped_tri == 2) {
                 temp_des.elements[tri_index] = clipped_tri1;
-                ada_insert(Tri, temp_des, clipped_tri2, tri_index+1);
+                ada_insert_unordered(Tri, temp_des, clipped_tri2, (tri_index+1));
             }
         }
     }
 
+    if (temp_des.length > 2) {
+        ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
+    }
 
     mat2D_free(top_p);
     mat2D_free(top_n);

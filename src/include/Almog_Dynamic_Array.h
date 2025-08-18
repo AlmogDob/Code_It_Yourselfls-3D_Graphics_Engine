@@ -51,6 +51,7 @@
 
 #define ada_insert(type, header, value, index) do {                                                         \
     ADA_ASSERT((int)index >= 0);                                                                            \
+    ADA_ASSERT((float)index - (int)index == 0);                                                             \
     ada_appand(type, header, header.elements[header.length-1]);                                             \
     for (size_t ada_for_loop_index = header.length-2; ada_for_loop_index > index; ada_for_loop_index--) {   \
         header.elements[ada_for_loop_index] = header.elements [ada_for_loop_index-1];                       \
@@ -58,12 +59,27 @@
     header.elements[index] = value;                                                                         \
 } while (0)                                                                                                 \
 
+#define ada_insert_unordered(type, header, value, index) do {   \
+    ADA_ASSERT((int)index >= 0);                                \
+    ADA_ASSERT((float)index - (int)index == 0);                 \
+    ada_appand(type, header, header.elements[index]);           \
+    header.elements[index] = value;                             \
+} while (0)
+
 #define ada_remove(type, header, index) do {                                                                \
     ADA_ASSERT((int)index >= 0);                                                                            \
+    ADA_ASSERT((float)index - (int)index == 0);                                                             \
     for (size_t ada_for_loop_index = index; ada_for_loop_index < header.length-1; ada_for_loop_index++) {   \
         header.elements[ada_for_loop_index] = header.elements[ada_for_loop_index+1];                        \
     }                                                                                                       \
     header.length--;                                                                                        \
+} while (0)
+
+#define ada_remove_unordered(type, header, index) do {          \
+    ADA_ASSERT((int)(index) >= 0);                                \
+    ADA_ASSERT((float)(index) - (int)(index) == 0);                 \
+    header.elements[index] = header.elements[header.length-1];  \
+    header.length--;                                            \
 } while (0)
 
 #endif /*ALMOG_DYNAMIC_ARRAY_H_*/

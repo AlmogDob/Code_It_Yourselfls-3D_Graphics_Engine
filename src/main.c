@@ -32,6 +32,7 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./obj_files/bunny.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/video_ship.obj", MAX_LEN_LINE);
+    // strncpy(file_path, "./obj_files/indoor_plant_02_obj/indoor_plant_02.obj", MAX_LEN_LINE);
 
     // strncpy(file_path, "./stl_files/plug.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/pin.STL", MAX_LEN_LINE);

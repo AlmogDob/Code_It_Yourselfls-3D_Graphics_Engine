@@ -33,7 +33,10 @@ int main()
     print_int_array(x);
 
     ada_remove(int, x, 1);
-    ada_remove(int, x, 0);
+
+    print_int_array(x);
+
+    ada_remove_unordered(int, x, 1);
 
     print_int_array(x);
 

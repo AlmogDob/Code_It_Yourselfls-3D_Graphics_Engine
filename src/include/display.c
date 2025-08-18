@@ -307,7 +307,7 @@ void render_window(game_state_t *game_state)
         // SDL_SetRenderDrawColor(game_state->renderer, HexARGB_RGBA(0xFF181818));
         // SDL_RenderClear(game_state->renderer);
         // mat2D_fill(game_state->window_pixels_mat, 0x181818);
-        memset(game_state->window_pixels_mat.elements, 0x18, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
+        memset(game_state->window_pixels_mat.elements, 0x20, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
     }
     /*------------------------------------------------------------------------*/
 
@@ -432,7 +432,7 @@ void init_scene(game_state_t *game_state)
 
     game_state->scene.light_direction = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.light_direction, 0);
-    MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
+    // MAT2D_AT(game_state->scene.light_direction, 1, 0) = -1;
     MAT2D_AT(game_state->scene.light_direction, 2, 0) = -1;
 
     game_state->scene.proj_mat = mat2D_alloc(4, 4);
