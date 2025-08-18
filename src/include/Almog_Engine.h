@@ -90,25 +90,19 @@ typedef struct {
 } Mesh; /* Tri ada array */
 #endif
 
+#ifndef MESH_ARRAY
+#define MESH_ARRAY
+typedef struct {
+    size_t length;
+    size_t capacity;
+    Mesh *elements;
+} Mesh_array; /* Mesh ada array */
+#endif
+
 typedef struct {
     size_t length;
     Tri *elements;
 } Mesh_static;
-
-typedef struct {
-    Mat2D z_near_p;
-    Mat2D z_near_n;
-    Mat2D z_far_p;
-    Mat2D z_far_n;
-    Mat2D right_p;
-    Mat2D right_n;
-    Mat2D left_p;
-    Mat2D left_n;
-    Mat2D top_p;
-    Mat2D top_n;
-    Mat2D bottom_p;
-    Mat2D bottom_n;
-} Camera_prism;
 
 typedef struct {
     Mat2D init_position;
@@ -119,7 +113,6 @@ typedef struct {
     float z_far;
     float fov_deg;
     float aspect_ratio;
-    Camera_prism camera_prism;
     float roll_offset_deg;
     float pitch_offset_deg;
     float yaw_offset_deg;
@@ -129,9 +122,9 @@ typedef struct {
 } Camera;
 
 typedef struct {
-    Mesh temp_mesh;
-    Mesh proj_temp_mesh;
-    Mesh mesh;
+    Mesh_array in_world_meshes;
+    Mesh_array projected_meshes;
+    Mesh_array original_meshes;
     Camera camera;
     Mat2D up_direction;
     Mat2D light_direction;

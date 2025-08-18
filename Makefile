@@ -6,7 +6,7 @@ main: build_main run_main clean_main
 	@echo ./build/main done
 
 build_main: ./src/main.c 
-	@echo [Info] building main
+	@echo [INFO] building main
 	@gcc ./src/main.c $(CFLAGS) -o ./build/main
 
 run_main:
@@ -15,14 +15,14 @@ run_main:
 	@echo
 
 clean_main:
-	@echo [Info] removing all build files
+	@echo [INFO] removing all build files
 	@rm ./build/main
 
 debug_main: debug_build_main
 	gdb ./build/main
 
 debug_build_main: ./src/main.c
-	@echo [Info] building main
+	@echo [INFO] building main
 	gcc ./src/main.c $(CFLAGS) -ggdb -o ./build/main
 
 profile_main: profile_build_main
@@ -36,7 +36,7 @@ profile_main: profile_build_main
 	make clean_main
 
 profile_build_main: ./src/main.c
-	@echo [Info] building main
+	@echo [INFO] building main
 	@gcc ./src/main.c $(CFLAGS) -p -ggdb -o ./build/main
 
 # valgrind -s --leak-check=full ./build/main
@@ -47,7 +47,7 @@ temp: build_temp run_temp clean_temp
 	@echo ./build/temp done
 
 build_temp: ./src/temp.c 
-	@echo [Info] building temp
+	@echo [INFO] building temp
 	@gcc ./src/temp.c $(CFLAGS) -o ./build/temp
 
 run_temp:
@@ -56,14 +56,14 @@ run_temp:
 	@echo
 
 clean_temp:
-	@echo [Info] removing all build files
+	@echo [INFO] removing all build files
 	@rm ./build/temp
 
 debug_temp: debug_build_temp
 	gdb ./build/temp
 
 debug_build_temp: ./src/temp.c
-	@echo [Info] building temp
+	@echo [INFO] building temp
 	@gcc ./src/temp.c $(CFLAGS) -ggdb -o ./build/temp
 
 profile_temp: profile_build_temp
@@ -77,7 +77,7 @@ profile_temp: profile_build_temp
 	make clean_temp
 
 profile_build_temp: ./src/temp.c
-	@echo [Info] building temp
+	@echo [INFO] building temp
 	@gcc ./src/temp.c $(CFLAGS) -p -ggdb -o ./build/temp
 
 # valgrind -s --leak-check=full ./temp
@@ -164,10 +164,10 @@ profile_build_Aobj2c: ./src/Aobj2c.c
 #############################################################
 
 Astl2c: ./src/Astl2c.c
-	@echo [Info] building Astl2c
+	@echo [INFO] building Astl2c
 	@gcc ./src/Astl2c.c $(CFLAGS) -o ./build/Astl2c
 	@echo
 	./build/Astl2c
 	@echo
-	@echo [Info] removing Astl2c
+	@echo [INFO] removing Astl2c
 	@rm ./build/Astl2c

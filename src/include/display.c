@@ -394,6 +394,7 @@ void init_camera(game_state_t *game_state)
 
     game_state->scene.camera.init_position = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.init_position, 0);
+    MAT2D_AT(game_state->scene.camera.init_position, 2, 0) = -2;
 
     game_state->scene.camera.current_position = mat2D_alloc(3, 1);
     mat2D_copy(game_state->scene.camera.current_position, game_state->scene.camera.init_position);
