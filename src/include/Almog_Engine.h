@@ -45,8 +45,8 @@
 #define STL_ATTRIBUTE_BITS_SIZE 2
 #endif
 
-#define HexARGB_RGBA(x) (x>>(8*2)&0xFF), (x>>(8*1)&0xFF), (x>>(8*0)&0xFF), (x>>(8*3)&0xFF)
-#define HexARGB_RGBA_VAR(x) uint8_t r = (x>>(8*2)&0xFF); uint8_t g = (x>>(8*1)&0xFF); uint8_t b = (x>>(8*0)&0xFF); uint8_t a = (x>>(8*3)&0xFF)
+#define HexARGB_RGBA(x) ((x)>>(8*2)&0xFF), ((x)>>(8*1)&0xFF), ((x)>>(8*0)&0xFF), ((x)>>(8*3)&0xFF)
+#define HexARGB_RGBA_VAR(x) uint8_t r = ((x)>>(8*2)&0xFF); uint8_t g = ((x)>>(8*1)&0xFF); uint8_t b = ((x)>>(8*0)&0xFF); uint8_t a = ((x)>>(8*3)&0xFF)
 #define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
 #define RGB_hexRGB(r, g, b) (int)(0x010000*(r) + 0x000100*(g) + 0x000001*(b))
 
@@ -78,6 +78,7 @@ typedef struct {
     float z_max;
     bool to_draw;
     float light_intensity;
+    uint32_t color;
 } Tri;
 #endif
 
@@ -553,6 +554,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                 tri1.center.z = (tri1.points[0].z + tri1.points[1].z + tri1.points[2].z) / 3;
                 tri1.z_min = fmin(tri1.points[0].z, fmin(tri1.points[1].z, tri1.points[2].z));
                 tri1.z_max = fmax(tri1.points[0].z, fmax(tri1.points[1].z, tri1.points[2].z));
+                tri1.color = 0xFFFFFFFF;
 
                 ada_appand(Tri, mesh, tri1);
                 // AE_PRINT_TRI(tri1);
@@ -603,6 +605,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                 tri1.center.z = (tri1.points[0].z + tri1.points[1].z + tri1.points[2].z) / 3;
                 tri1.z_min = fmin(tri1.points[0].z, fmin(tri1.points[1].z, tri1.points[2].z));
                 tri1.z_max = fmax(tri1.points[0].z, fmax(tri1.points[1].z, tri1.points[2].z));
+                tri1.color = 0xFFFFFFFF;
 
                 tri2.to_draw = true;
                 tri2.light_intensity = 1;
@@ -611,6 +614,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                 tri2.center.z = (tri2.points[0].z + tri2.points[1].z + tri2.points[2].z) / 3;
                 tri2.z_min = fmin(tri2.points[0].z, fmin(tri2.points[1].z, tri2.points[2].z));
                 tri2.z_max = fmax(tri2.points[0].z, fmax(tri2.points[1].z, tri2.points[2].z));
+                tri2.color = 0xFFFFFFFF;
 
                 ada_appand(Tri, mesh, tri1);
                 ada_appand(Tri, mesh, tri2);
@@ -671,6 +675,7 @@ Mesh ae_get_mesh_from_stl_file(char *file_path)
         temp_tri.center.z = (temp_tri.points[0].z + temp_tri.points[1].z + temp_tri.points[2].z) / 3;
         temp_tri.z_min = fmin(temp_tri.points[0].z, fmin(temp_tri.points[1].z, temp_tri.points[2].z));
         temp_tri.z_max = fmax(temp_tri.points[0].z, fmax(temp_tri.points[1].z, temp_tri.points[2].z));
+        temp_tri.color = 0xFFFFFFFF;
 
         ada_appand(Tri, mesh, temp_tri);
     }
@@ -1121,7 +1126,7 @@ Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri)
     Mat2D src_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
 
-    Tri des_tri;
+    Tri des_tri = tri;
 
     for (int i = 0; i < 3; i++) {
         MAT2D_AT(src_point_mat, 0, 0) = tri.points[i].x;
@@ -1155,7 +1160,7 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
     Mat2D camera2tri = mat2D_alloc(1, 3);
     Mat2D light_directio_traspose = mat2D_alloc(1, 3);
     Mat2D dot_product = mat2D_alloc(1, 1);
-    Tri des_tri;
+    Tri des_tri = tri;
 
     ae_calc_normal_to_tri(tri_normal, tri);
     ae_point_to_mat2D(tri.points[0], temp_camera2tri);
