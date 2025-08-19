@@ -1108,7 +1108,7 @@ Point ae_project_point_view2screen(Mat2D proj_mat, Point src)
     if (MAT2D_AT(des_point_mat, 0, 3)) {
         des.x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
         des.y = MAT2D_AT(des_point_mat, 0, 1) / MAT2D_AT(des_point_mat, 0, 3);
-        des.z = MAT2D_AT(des_point_mat, 0, 2) / MAT2D_AT(des_point_mat, 0, 3);
+        des.z = MAT2D_AT(des_point_mat, 0, 2) = MAT2D_AT(des_point_mat, 0, 3);
     } else {
         des.x = MAT2D_AT(des_point_mat, 0, 0);
         des.y = MAT2D_AT(des_point_mat, 0, 1);
@@ -1330,9 +1330,9 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
         }
     }
 
-    if (temp_des.length > 2) {
-        ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
-    }
+    // if (temp_des.length > 2) {
+    //     ae_qsort_tri(temp_des.elements, 0, temp_des.length-1);
+    // }
 
     mat2D_free(top_p);
     mat2D_free(top_n);

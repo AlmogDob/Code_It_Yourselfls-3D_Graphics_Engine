@@ -42,7 +42,7 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./obj_files/f16/f16.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/cruiser/cruiser.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/bunny.obj", MAX_LEN_LINE);
-    strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
+    // strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/video_ship.obj", MAX_LEN_LINE);
     // strncpy(file_path, "./obj_files/indoor_plant_02_obj/indoor_plant_02.obj", MAX_LEN_LINE);
 
@@ -54,12 +54,28 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./stl_files/Voronoi_Stanford_Bunny.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Lucy_120mm_simplified.STL", MAX_LEN_LINE);
 
+    strncpy(file_path, "./obj_files/axis.obj", MAX_LEN_LINE);
     ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
 
     strncpy(file_path, "./stl_files/teapot.stl", MAX_LEN_LINE);
     ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
 
+    strncpy(file_path, "./stl_files/Stanford dragon lowres.STL", MAX_LEN_LINE);
+    ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
+    
+    strncpy(file_path, "./obj_files/f16/f16.obj", MAX_LEN_LINE);
+    ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
+
+
     printf("[INFO] number of meshes: %zu\n", game_state->scene.original_meshes.length);
+    size_t sum = 0;
+    for (size_t i = 0; i < game_state->scene.original_meshes.length; i++) {
+        printf("[INFO] mesh number %zu: %zu\n", i, game_state->scene.original_meshes.elements[i].length);
+        sum += game_state->scene.original_meshes.elements[i].length;
+    }
+    printf("[INFO] total number of triangles: %zu\n", sum);
+
+
 
     for (size_t i = 0; i < game_state->scene.original_meshes.length; i++) {
         ae_normalize_mesh(game_state->scene.original_meshes.elements[i]);
@@ -71,10 +87,14 @@ void setup(game_state_t *game_state)
     }
 
     ae_rotate_mesh_Euler_xyz(game_state->scene.in_world_meshes.elements[1], -90, 0, 180);
+    ae_rotate_mesh_Euler_xyz(game_state->scene.in_world_meshes.elements[2], -90, 0, 180);
+    ae_rotate_mesh_Euler_xyz(game_state->scene.in_world_meshes.elements[3], 0, 0, 180);
 
 
-    ae_translate_mesh(game_state->scene.in_world_meshes.elements[0], 2, 0, 2);
-    ae_translate_mesh(game_state->scene.in_world_meshes.elements[1], -2, 0, 2);
+    ae_translate_mesh(game_state->scene.in_world_meshes.elements[0], 2, 0, 4);
+    ae_translate_mesh(game_state->scene.in_world_meshes.elements[1], -2, 0, 4);
+    ae_translate_mesh(game_state->scene.in_world_meshes.elements[2], 0, 0, 6);
+    ae_translate_mesh(game_state->scene.in_world_meshes.elements[3], 0, 0, 2);
 
 }
 
@@ -93,7 +113,7 @@ void update(game_state_t *game_state)
 void render(game_state_t *game_state)
 {
     for (size_t i = 0; i < game_state->scene.projected_meshes.length; i++) {
-        ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
+        ars_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
     }
 
     for (size_t i = 0; i < game_state->scene.in_world_meshes.length; i++) {
