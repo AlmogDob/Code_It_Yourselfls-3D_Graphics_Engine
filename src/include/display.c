@@ -67,6 +67,7 @@ typedef struct {
     SDL_Texture *window_texture;
 
     Mat2D_uint32 window_pixels_mat;
+    Mat2D z_buffer_mat;
     
     Scene scene;
 } game_state_t;
@@ -185,6 +186,7 @@ void setup_window(game_state_t *game_state)
     game_state->window_surface = SDL_GetWindowSurface(game_state->window);
 
     game_state->window_pixels_mat = mat2D_alloc_uint32(game_state->window_h, game_state->window_w);
+    game_state->z_buffer_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
 
     init_scene(game_state);
 
@@ -308,6 +310,7 @@ void render_window(game_state_t *game_state)
         // SDL_RenderClear(game_state->renderer);
         // mat2D_fill(game_state->window_pixels_mat, 0x181818);
         memset(game_state->window_pixels_mat.elements, 0x20, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
+        mat2D_fill(game_state->z_buffer_mat, DBL_MAX);
     }
     /*------------------------------------------------------------------------*/
 
@@ -367,9 +370,12 @@ void check_window_mat_size(game_state_t *game_state)
 {
     if (game_state->window_h != (int)game_state->window_pixels_mat.rows || game_state->window_w != (int)game_state->window_pixels_mat.cols) {
         mat2D_free_uint32(game_state->window_pixels_mat);
+        mat2D_free(game_state->z_buffer_mat);
         SDL_FreeSurface(game_state->window_surface);
+
         game_state->window_pixels_mat = mat2D_alloc_uint32(game_state->window_h, game_state->window_w);
-        // printf("hello\nmat rows: %5zu, mat cols: %5zu\n", game_state->window_pixels_mat.rows, game_state->window_pixels_mat.cols);
+        game_state->z_buffer_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
+
         game_state->window_surface = SDL_GetWindowSurface(game_state->window);
     }
 }

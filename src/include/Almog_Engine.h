@@ -72,6 +72,7 @@ typedef struct {
 #define TRI
 typedef struct {
     Point points[3];
+    Point tex_points[3];
     Point center;
     Point normal;
     float z_min;
@@ -153,7 +154,7 @@ void ae_set_mesh_bounding_box(Mesh mesh, float *x_min, float *x_max, float *y_mi
 void ae_set_tri_center_zmin_zmax(Tri *tri);
 void ae_normalize_mesh(Mesh mesh);
 
-Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat2D line_end);
+Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat2D line_end, float *t);
 float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n);
 int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_out1, Tri *tri_out2);
 
@@ -502,7 +503,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
             // break;
         }
         if (!strncmp(current_word, "f", 1)) {
-            Tri tri1, tri2;
+            Tri tri1 = {0}, tri2 = {0};
 
             // printf("line: %s\nword: %s, %d\n", current_line, current_word, atoi(current_word));
             asm_get_word_and_cut(current_word, current_line, ' ');
@@ -529,7 +530,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                 }
                 if (number_of_backslash == 2) {
                     if (!texture_warning_was_printed) {
-                        fprintf(stderr, "%s:%d [Warning] texture and normals data ignored\n", __FILE__, __LINE__);
+                        fprintf(stderr, "%s:%d [Warning] texture and normals data ignored of file at - '%s'\n", __FILE__, __LINE__, file_path);
                         texture_warning_was_printed = 1;
                     }
 
@@ -547,6 +548,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                     // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
                     tri1.points[2] = points.elements[atoi(current_num_str)-1];
                 }
+
                 tri1.to_draw = true;
                 tri1.light_intensity = 1;
                 tri1.center.x = (tri1.points[0].x + tri1.points[1].x + tri1.points[2].x) / 3;
@@ -573,7 +575,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                 }
                 if (number_of_backslash == 2 || number_of_backslash == 1) {
                     if (!texture_warning_was_printed) {
-                        fprintf(stderr, "%s:%d [Warning] texture and normals data ignored\n", __FILE__, __LINE__);
+                        fprintf(stderr, "%s:%d [Warning] texture and normals data ignored of file at - '%s'\n", __FILE__, __LINE__, file_path);
                         texture_warning_was_printed = 1;
                     }
 
@@ -598,6 +600,7 @@ Mesh ae_get_mesh_from_obj_file(char *file_path)
                     // printf("line: %s\nword: %s\nnum str: %s, %d\n", current_line, current_word, current_num_str, atoi(current_num_str));
                     tri2.points[1] = points.elements[atoi(current_num_str)-1];
                 }
+
                 tri1.to_draw = true;
                 tri1.light_intensity = 1;
                 tri1.center.x = (tri1.points[0].x + tri1.points[1].x + tri1.points[2].x) / 3;
@@ -648,7 +651,7 @@ Mesh ae_get_mesh_from_stl_file(char *file_path)
     Mesh mesh;
     ada_init_array(Tri, mesh);
     for (size_t i = 0; i < num_of_tri; i++) {
-        Tri temp_tri;
+        Tri temp_tri = {0};
 
         fread(&(temp_tri.normal.x), STL_NUM_SIZE, 1, file);
         fread(&(temp_tri.normal.y), STL_NUM_SIZE, 1, file);
@@ -873,16 +876,16 @@ void ae_normalize_mesh(Mesh mesh)
     }
 }
 
-Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat2D line_end)
+Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat2D line_end, float *t)
 {
     mat2D_normalize(plane_n);
     float plane_d = - mat2D_dot_product(plane_n, plane_p);
     float ad = mat2D_dot_product(line_start, plane_n);
     float bd = mat2D_dot_product(line_end, plane_n);
-    float t  = (- plane_d - ad) / (bd - ad);
+    *t  = (- plane_d - ad) / (bd - ad);
     mat2D_sub(line_end, line_start);
     Mat2D line_start_to_end = line_end;
-    mat2D_mult(line_start_to_end, t);
+    mat2D_mult(line_start_to_end, *t);
     Mat2D line_to_intersection = line_start_to_end;
     
     Mat2D intersection_p = mat2D_alloc(3, 1);
@@ -929,6 +932,7 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
     float d0 = signed_dist_point_and_plane(tri_in.points[0], plane_p, plane_n);
     float d1 = signed_dist_point_and_plane(tri_in.points[1], plane_p, plane_n);
     float d2 = signed_dist_point_and_plane(tri_in.points[2], plane_p, plane_n);
+    float t;
 
     if (d0 >= 0) {
         inside_points[inside_points_count++] = tri_in.points[0];
@@ -962,11 +966,11 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
 
         ae_point_to_mat2D(inside_points[0], line_start);
         ae_point_to_mat2D(outside_points[0], line_end);
-        (*tri_out1).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+        (*tri_out1).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
 
         ae_point_to_mat2D(inside_points[0], line_start);
         ae_point_to_mat2D(outside_points[1], line_end);
-        (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+        (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
 
         mat2D_free(line_start);
         mat2D_free(line_end);
@@ -983,12 +987,12 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
         (*tri_out1).points[1] = inside_points[1];
         ae_point_to_mat2D(inside_points[0], line_start);
         ae_point_to_mat2D(outside_points[0], line_end);
-        (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+        (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
 
         (*tri_out2).points[0] = inside_points[1];
         ae_point_to_mat2D(inside_points[1], line_start);
         ae_point_to_mat2D(outside_points[0], line_end);
-        (*tri_out2).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end);
+        (*tri_out2).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
         (*tri_out2).points[2] = (*tri_out1).points[2];
 
         mat2D_free(line_start);
