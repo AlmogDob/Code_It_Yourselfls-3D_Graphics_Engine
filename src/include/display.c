@@ -67,7 +67,7 @@ typedef struct {
     SDL_Texture *window_texture;
 
     Mat2D_uint32 window_pixels_mat;
-    Mat2D z_buffer_mat;
+    Mat2D inv_z_buffer_mat;
     
     Scene scene;
 } game_state_t;
@@ -186,7 +186,7 @@ void setup_window(game_state_t *game_state)
     game_state->window_surface = SDL_GetWindowSurface(game_state->window);
 
     game_state->window_pixels_mat = mat2D_alloc_uint32(game_state->window_h, game_state->window_w);
-    game_state->z_buffer_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
+    game_state->inv_z_buffer_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
 
     init_scene(game_state);
 
@@ -310,7 +310,8 @@ void render_window(game_state_t *game_state)
         // SDL_RenderClear(game_state->renderer);
         // mat2D_fill(game_state->window_pixels_mat, 0x181818);
         memset(game_state->window_pixels_mat.elements, 0x20, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);
-        mat2D_fill(game_state->z_buffer_mat, DBL_MAX);
+        /* not using mat2D_fill but using memset because it is way faster, so the buffer needs to be of 1/z */
+        memset(game_state->inv_z_buffer_mat.elements, 0x0, sizeof(double) * game_state->inv_z_buffer_mat.rows * game_state->inv_z_buffer_mat.cols);
     }
     /*------------------------------------------------------------------------*/
 
@@ -370,11 +371,11 @@ void check_window_mat_size(game_state_t *game_state)
 {
     if (game_state->window_h != (int)game_state->window_pixels_mat.rows || game_state->window_w != (int)game_state->window_pixels_mat.cols) {
         mat2D_free_uint32(game_state->window_pixels_mat);
-        mat2D_free(game_state->z_buffer_mat);
+        mat2D_free(game_state->inv_z_buffer_mat);
         SDL_FreeSurface(game_state->window_surface);
 
         game_state->window_pixels_mat = mat2D_alloc_uint32(game_state->window_h, game_state->window_w);
-        game_state->z_buffer_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
+        game_state->inv_z_buffer_mat = mat2D_alloc(game_state->window_h, game_state->window_w);
 
         game_state->window_surface = SDL_GetWindowSurface(game_state->window);
     }
@@ -400,7 +401,7 @@ void init_camera(game_state_t *game_state)
 
     game_state->scene.camera.init_position = mat2D_alloc(3, 1);
     mat2D_fill(game_state->scene.camera.init_position, 0);
-    MAT2D_AT(game_state->scene.camera.init_position, 2, 0) = -2;
+    MAT2D_AT(game_state->scene.camera.init_position, 2, 0) = -4;
 
     game_state->scene.camera.current_position = mat2D_alloc(3, 1);
     mat2D_copy(game_state->scene.camera.current_position, game_state->scene.camera.init_position);

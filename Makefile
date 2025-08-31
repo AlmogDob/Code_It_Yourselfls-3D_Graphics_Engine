@@ -1,6 +1,6 @@
 CCHECKS = -fsanitize=address
 CWARNINGS = -Wall -Wextra -Wuninitialized 
-CFLAGS = $(CWARNINGS) -lm -lSDL2 -lSDL2_ttf -O3
+CFLAGS = $(CWARNINGS) -lm -lSDL2 -lSDL2_ttf
 
 main: build_main run_main clean_main  
 	@echo ./build/main done
@@ -162,7 +162,6 @@ profile_build_Aobj2c: ./src/Aobj2c.c
 # cloc --exclude-lang=JSON,make .
 
 #############################################################
-
 Astl2c: ./src/Astl2c.c
 	@echo [INFO] building Astl2c
 	@gcc ./src/Astl2c.c $(CFLAGS) -o ./build/Astl2c
@@ -171,3 +170,20 @@ Astl2c: ./src/Astl2c.c
 	@echo
 	@echo [INFO] removing Astl2c
 	@rm ./build/Astl2c
+
+#############################################################
+example1: build_example1 run_example1 clean_example1  
+	@echo ./build/example1 done
+
+build_example1: ./src/example1.c 
+	@echo [INFO] building example1
+	@gcc ./src/example1.c $(CFLAGS) -o ./build/example1
+
+run_example1:
+	@echo
+	./build/example1
+	@echo
+
+clean_example1:
+	@echo [INFO] removing all build files
+	@rm ./build/example1

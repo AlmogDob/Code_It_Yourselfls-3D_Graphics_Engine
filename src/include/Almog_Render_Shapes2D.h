@@ -49,15 +49,15 @@ void ars2D_draw_arrow(Mat2D_uint32 screen_mat, int xs, int ys, int xe, int ye, f
 void ars2D_draw_circle(Mat2D_uint32 screen_mat, float center_x, float center_y, float r, uint32_t color);
 void ars2D_fill_circle(Mat2D_uint32 screen_mat, float center_x, float center_y, float r, uint32_t color);
 
-void ars2D_draw_tri(Mat2D_uint32 screen_mat, Tri tri);
+void ars2D_draw_tri(Mat2D_uint32 screen_mat, Tri tri, uint32_t color);
 void ars2D_fill_tri_scanline_rasterizer(Mat2D_uint32 screen_mat, Tri tri);
-void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, float light_intensity);
+void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer, Tri tri, float light_intensity);
 void ars2D_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat, Tri tri, float light_intensity);
 void ars2D_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri tri, float light_intensity);
 
-void ars2D_draw_mesh(Mat2D_uint32 screen_mat, Mesh mesh);
+void ars2D_draw_mesh(Mat2D_uint32 screen_mat, Mesh mesh, uint32_t color);
 void ars2D_fill_mesh_scanline_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh);
-void ars2D_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh);
+void ars2D_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer_mat, Mesh mesh);
 
 #endif /*ALMOG_RENDER_SHAPES_H_*/
 
@@ -213,92 +213,258 @@ void ars2D_fill_circle(Mat2D_uint32 screen_mat, float center_x, float center_y, 
     }
 }
 
-void ars2D_draw_tri(Mat2D_uint32 screen_mat, Tri tri)
+void ars2D_draw_tri(Mat2D_uint32 screen_mat, Tri tri, uint32_t color)
 {
-    ars2D_draw_line(screen_mat, tri.points[0].x, tri.points[0].y, tri.points[1].x, tri.points[1].y, tri.color);
-    ars2D_draw_line(screen_mat, tri.points[1].x, tri.points[1].y, tri.points[2].x, tri.points[2].y, tri.color);
-    ars2D_draw_line(screen_mat, tri.points[2].x, tri.points[2].y, tri.points[0].x, tri.points[0].y, tri.color);
+    ars2D_draw_line(screen_mat, tri.points[0].x, tri.points[0].y, tri.points[1].x, tri.points[1].y, color);
+    ars2D_draw_line(screen_mat, tri.points[1].x, tri.points[1].y, tri.points[2].x, tri.points[2].y, color);
+    ars2D_draw_line(screen_mat, tri.points[2].x, tri.points[2].y, tri.points[0].x, tri.points[0].y, color);
 
     // ars2D_draw_arrow(screen_mat, tri.points[0].x, tri.points[0].y, tri.points[1].x, tri.points[1].y, 0.3, 22, color);
     // ars2D_draw_arrow(screen_mat, tri.points[1].x, tri.points[1].y, tri.points[2].x, tri.points[2].y, 0.3, 22, color);
     // ars2D_draw_arrow(screen_mat, tri.points[2].x, tri.points[2].y, tri.points[0].x, tri.points[0].y, 0.3, 22, color);
 }
 
-    /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
-
 /* This works but there are some artifacts */
 void ars2D_fill_tri_scanline_rasterizer(Mat2D_uint32 screen_mat, Tri tri)
 {
+    /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48.
+    Update to this function was done according to 'javidx9' tutorial: https://youtu.be/nBzCS-Y0FcY. */
+
+    HexARGB_RGBA_VAR(tri.color);
+    float rf = r * tri.light_intensity;
+    float gf = g * tri.light_intensity;
+    float bf = b * tri.light_intensity;
+    uint8_t r8 = (uint8_t)fmaxf(0, fminf(255, rf));
+    uint8_t g8 = (uint8_t)fmaxf(0, fminf(255, gf));
+    uint8_t b8 = (uint8_t)fmaxf(0, fminf(255, bf));
+    (void)a;
+    uint32_t color = RGB_hexRGB(r8, g8, b8);
+
     /* arranging the points according to y value */
     Point p0 = tri.points[0];
     Point p1 = tri.points[1];
     Point p2 = tri.points[2];
-    if (p1.y > p0.y) {
+    Point tex_p0 = tri.tex_points[0];
+    Point tex_p1 = tri.tex_points[1];
+    Point tex_p2 = tri.tex_points[2];
+    if (p1.y < p0.y) {
         Point temp = p1;
         p1 = p0;
         p0 = temp;
+        temp = tex_p1;
+        tex_p1 = tex_p0;
+        tex_p0 = temp;
     }
-    if (p2.y > p1.y) {
+    if (p2.y < p1.y) {
         Point temp = p2;
         p2 = p1;
         p1 = temp;
-        if (p1.y > p0.y) {
+        temp = tex_p2;
+        tex_p2 = tex_p1;
+        tex_p1 = temp;
+        if (p1.y < p0.y) {
             Point temp = p1;
             p1 = p0;
             p0 = temp;
+            temp = tex_p1;
+            tex_p1 = tex_p0;
+            tex_p0 = temp;
         }
     }
-    if (p2.y > p0.y) {
+    if (p2.y < p0.y) {
         Point temp = p2;
         p2 = p0;
         p0 = temp;
+        temp = tex_p2;
+        tex_p2 = tex_p0;
+        tex_p0 = temp;
     }
 
     /* finding max and min x */
     int x_max = fmax(p0.x, fmax(p1.x, p2.x));
     int x_min = fmin(p0.x, fmin(p1.x, p2.x));
 
-    if (p0.x == p1.x && p1.x == p2.x) {
-        ars2D_draw_tri(screen_mat, tri);
-        return;
+    int dy0 = p1.y - p0.y;
+    int dx0 = p1.x - p0.x;
+    int dy1 = p2.y - p0.y;
+    int dx1 = p2.x - p0.x;
+
+    float tex_dx0 = tex_p1.x - tex_p0.x;
+    float tex_dy0 = tex_p1.y - tex_p0.y;
+    float tex_dz0 = tex_p1.z - tex_p0.z;
+    float tex_dx1 = tex_p2.x - tex_p0.x;
+    float tex_dy1 = tex_p2.y - tex_p0.y;
+    float tex_dz1 = tex_p2.z - tex_p0.z;
+
+    float tex_x = 0, tex_y = 0, tex_z;
+
+    float dax_step = 0, dbx_step = 0;
+    float tex_dx0_step = 0, tex_dy0_step = 0, tex_dz0_step = 0;
+    float tex_dx1_step = 0, tex_dy1_step = 0, tex_dz1_step = 0;
+
+    if (dy0) {
+        dax_step = dx0 / (float)(fabs(dy0));
+        tex_dx0_step = tex_dx0 / (float)(fabs(dy0));
+        tex_dy0_step = tex_dy0 / (float)(fabs(dy0));
+        tex_dz0_step = tex_dz0 / (float)(fabs(dy0));
+    }
+    if (dy1) {
+        dbx_step = dx1 / (float)(fabs(dy1));
+        tex_dx1_step = tex_dx1 / (float)(fabs(dy1));
+        tex_dy1_step = tex_dy1 / (float)(fabs(dy1));
+        tex_dz1_step = tex_dz1 / (float)(fabs(dy1));
     }
 
-    /* The rasterization */
-    float m01 = (p0.y - p1.y) / (p0.x - p1.x);
-    float b01 = p0.y - m01 * p0.x;
-    float m02 = (p0.y - p2.y) / (p0.x - p2.x);
-    float b02 = p0.y - m02 * p0.x;
-    float m12 = (p1.y - p2.y) / (p1.x - p2.x);
-    float b12 = p1.y - m12 * p1.x;
+    if (dy0) {
+        for (int i = p0.y; i <= p1.y; i++) {
+            int ax = p0.x + (float)(i - p0.y) * dax_step;
+            int bx = p0.x + (float)(i - p0.y) * dbx_step;
 
-    float epsilon = 1e-3;
-    int gap = 15;
-    // printf("m01: %f, m02: %f, m12: %f\n", m01, m02, m12);
-    if (fabs(m02) < epsilon || fabs(m12) < epsilon || fabs(m01) < epsilon) return;
-    for (int y = (int)p2.y; y < (int)p1.y; y++)
-    {
-        float x02 = (y - b02) / m02;
-        float x12 = (y - b12) / m12;
-        if (x02 <= x_min-gap || x02 >= x_max+gap) continue;
-        if (x12 <= x_min-gap || x12 >= x_max+gap) continue;
-        if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
-        if (fabs(p1.x - p2.x) - fabs(p1.x - x12) < 0) continue;
-        ars2D_draw_line(screen_mat, x02, y, x12, y, tri.color);
-        // printf("x02: %d, x12: %d, y: %d\n", (int)x02, (int)x12, (int)y);
+            float tex_sx = tex_p0.x + (float)(i - p0.y) * tex_dx0_step;
+            float tex_sy = tex_p0.y + (float)(i - p0.y) * tex_dy0_step;
+            float tex_sz = tex_p0.z + (float)(i - p0.y) * tex_dz0_step;
+
+            float tex_ex = tex_p0.x + (float)(i - p0.y) * tex_dx1_step;
+            float tex_ey = tex_p0.y + (float)(i - p0.y) * tex_dy1_step;
+            float tex_ez = tex_p0.z + (float)(i - p0.y) * tex_dz1_step;
+
+            if (ax > bx) {
+                int temp_int = ax;
+                ax = bx;
+                bx = temp_int;
+
+                float temp_float = tex_sx;
+                tex_sx = tex_ex;
+                tex_ex = temp_float;
+
+                temp_float = tex_sy;
+                tex_sy = tex_ey;
+                tex_ey = temp_float;
+            }
+
+            tex_x = tex_sx;
+            tex_y = tex_sy;
+
+            float t_step = 1.0f / ((float)(bx - ax));
+            float t = 0.0f;
+
+            for (int j = ax; j < bx; j++) {
+                tex_x = (1.0f - t) * tex_sx + t * tex_ex;
+                tex_y = (1.0f - t) * tex_sy + t * tex_ey;
+                tex_z = (1.0f - t) * tex_sz + t * tex_ez;
+
+                tex_x /= tex_z;
+                tex_y /= tex_z;
+
+                ars2D_draw_point(screen_mat, j, i, color);
+
+                t += t_step;
+            }
+        }
+
+        int dy0 = p2.y - p1.y;
+        int dx0 = p2.x - p1.x;
+
+        float tex_dy0 = tex_p2.y - tex_p1.y;
+        float tex_dx0 = tex_p2.x - tex_p1.x;
+
+        if (dy0) {
+            dax_step = dx0 / (float)(fabs(dy0));
+            tex_dx0_step = tex_dx0 / (float)(fabs(dy0));
+            tex_dy0_step = tex_dy0 / (float)(fabs(dy0));
+        }
+
+        for (int i = p1.y; i <= p2.y; i++) {
+            int ax = p1.x + (float)(i - p1.y) * dax_step;
+            int bx = p0.x + (float)(i - p0.y) * dbx_step;
+
+            float tex_sx = tex_p0.x + (float)(i - p0.y) * tex_dx0_step;
+            float tex_sy = tex_p0.y + (float)(i - p0.y) * tex_dy0_step;
+            float tex_sz = tex_p0.z + (float)(i - p0.y) * tex_dz0_step;
+
+            float tex_ex = tex_p0.x + (float)(i - p0.y) * tex_dx1_step;
+            float tex_ey = tex_p0.y + (float)(i - p0.y) * tex_dy1_step;
+            float tex_ez = tex_p0.z + (float)(i - p0.y) * tex_dz1_step;
+
+            if (ax > bx) {
+                int temp_int = ax;
+                ax = bx;
+                bx = temp_int;
+
+                float temp_float = tex_sx;
+                tex_sx = tex_ex;
+                tex_ex = temp_float;
+
+                temp_float = tex_sy;
+                tex_sy = tex_ey;
+                tex_ey = temp_float;
+            }
+
+            tex_x = tex_sx;
+            tex_y = tex_sy;
+
+            float t_step = 1.0f / ((float)(bx - ax));
+            float t = 0.0f;
+
+            for (int j = ax; j < bx; j++) {
+                tex_x = (1.0f - t) * tex_sx + t * tex_ex;
+                tex_y = (1.0f - t) * tex_sy + t * tex_ey;
+
+                ars2D_draw_point(screen_mat, j, i, color);
+
+                t += t_step;
+            }
+        }
     }
-    for (int y = (int)p1.y; y <= (int)p0.y; y++) {
-        float x01 = (y - b01) / m01;
-        float x02 = (y - b02) / m02;
-        if (x01 <= x_min-gap || x01 >= x_max+gap) continue;
-        if (x02 <= x_min-gap || x02 >= x_max+gap) continue;
-        if (fabs(p1.x - p0.x) - fabs(p1.x - x01) < 0) continue;
-        if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
-        ars2D_draw_line(screen_mat, x02, y, x01, y, tri.color);
-    }
+
+
+
+
+
+
+
+
+
+    // if (p0.x == p1.x && p1.x == p2.x) {
+    //     ars2D_draw_tri(screen_mat, tri, tri.color);
+    //     return;
+    // }
+
+    // /* The rasterization */
+    // float m01 = (p0.y - p1.y) / (p0.x - p1.x);
+    // float b01 = p0.y - m01 * p0.x;
+    // float m02 = (p0.y - p2.y) / (p0.x - p2.x);
+    // float b02 = p0.y - m02 * p0.x;
+    // float m12 = (p1.y - p2.y) / (p1.x - p2.x);
+    // float b12 = p1.y - m12 * p1.x;
+
+    // float epsilon = 1e-6;
+    // int gap = 2;
+    // // printf("m01: %f, m02: %f, m12: %f\n", m01, m02, m12);
+    // if (fabs(m02) < epsilon || fabs(m12) < epsilon || fabs(m01) < epsilon) return;
+    // for (int y = (int)p2.y; y < (int)p1.y; y++) {
+    //     float x02 = (y - b02) / m02;
+    //     float x12 = (y - b12) / m12;
+    //     if (x02 <= x_min-gap || x02 >= x_max+gap) continue;
+    //     if (x12 <= x_min-gap || x12 >= x_max+gap) continue;
+    //     if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
+    //     if (fabs(p1.x - p2.x) - fabs(p1.x - x12) < 0) continue;
+    //     ars2D_draw_line(screen_mat, x02, y, x12, y, tri.color);
+    //     // printf("x02: %d, x12: %d, y: %d\n", (int)x02, (int)x12, (int)y);
+    // }
+    // for (int y = (int)p1.y; y <= (int)p0.y; y++) {
+    //     float x01 = (y - b01) / m01;
+    //     float x02 = (y - b02) / m02;
+    //     if (x01 <= x_min-gap || x01 >= x_max+gap) continue;
+    //     if (x02 <= x_min-gap || x02 >= x_max+gap) continue;
+    //     if (fabs(p1.x - p0.x) - fabs(p1.x - x01) < 0) continue;
+    //     if (fabs(p0.x - p2.x) - fabs(p0.x - x02) < 0) continue;
+    //     ars2D_draw_line(screen_mat, x02, y, x01, y, tri.color);
+    // }
 }
 
 /* This function is the function for rasterization */
-void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, float light_intensity)
+void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer, Tri tri, float light_intensity)
 {
     /* This function follows the rasterizer of 'Pikuma' shown in his YouTube video. You can fine the video in this link: https://youtu.be/k5wtuKWmV48. */
 
@@ -310,7 +476,7 @@ void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, float l
     /* draw only outline of the tri if there is no area */
     float w = edge_cross_point(p0, p1, p1, p2);
     if (!w) {
-        ars2D_draw_tri(screen_mat, tri);
+        ars2D_draw_tri(screen_mat, tri, tri.color);
         return;
     }
     MATRIX2D_ASSERT(w != 0 && "triangle has area");
@@ -336,6 +502,10 @@ void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, float l
             float w1 = edge_cross_point(p1, p2, p1, p) + bias1;
             float w2 = edge_cross_point(p2, p0, p2, p) + bias2;
 
+            float alpha = fabs(w0 / w);
+            float beta  = fabs(w1 / w);
+            float gamma = fabs(w2 / w);
+
             if (w0 * w >= 0 && w1 * w >= 0 &&  w2 * w >= 0) {
                 HexARGB_RGBA_VAR(tri.color);
                 float rf = r * light_intensity;
@@ -345,7 +515,12 @@ void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Tri tri, float l
                 uint8_t g8 = (uint8_t)fmaxf(0, fminf(255, gf));
                 uint8_t b8 = (uint8_t)fmaxf(0, fminf(255, bf));
                 (void)a;
-                ars2D_draw_point(screen_mat, x, y, RGB_hexRGB(r8, g8, b8));
+
+                float inv_z = fabs(alpha * 1.0f / p0.z + beta * 1.0f / p1.z + gamma * 1.0f / p2.z);
+                if (inv_z > MAT2D_AT(inv_z_buffer, y, x)) {
+                    ars2D_draw_point(screen_mat, x, y, RGB_hexRGB(r8, g8, b8));
+                    MAT2D_AT(inv_z_buffer, y, x) = inv_z;
+                }
             }
         }
     }
@@ -503,12 +678,12 @@ void ars2D_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri t
     mat2D_free(cross20p);   
 }
 
-void ars2D_draw_mesh(Mat2D_uint32 screen_mat, Mesh mesh)
+void ars2D_draw_mesh(Mat2D_uint32 screen_mat, Mesh mesh, uint32_t color)
 {
     for (size_t i = 0; i < mesh.length; i++) {
         Tri tri = mesh.elements[i];
         if (tri.to_draw) {
-            ars2D_draw_tri(screen_mat, tri);
+            ars2D_draw_tri(screen_mat, tri, color);
         }
     }
 }
@@ -523,12 +698,12 @@ void ars2D_fill_mesh_scanline_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh)
     }
 }
 
-void ars2D_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mesh mesh)
+void ars2D_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer_mat, Mesh mesh)
 {
     for (size_t i = 0; i < mesh.length; i++) {
         Tri tri = mesh.elements[i];
         if (tri.to_draw) {
-            ars2D_fill_tri_Pinedas_rasterizer(screen_mat, tri, tri.light_intensity);
+            ars2D_fill_tri_Pinedas_rasterizer(screen_mat, inv_z_buffer_mat, tri, tri.light_intensity);
         }
     }
 }
