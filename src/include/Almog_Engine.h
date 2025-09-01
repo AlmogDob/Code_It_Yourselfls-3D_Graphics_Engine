@@ -48,7 +48,7 @@
 #define HexARGB_RGBA(x) ((x)>>(8*2)&0xFF), ((x)>>(8*1)&0xFF), ((x)>>(8*0)&0xFF), ((x)>>(8*3)&0xFF)
 #define HexARGB_RGBA_VAR(x) uint8_t r = ((x)>>(8*2)&0xFF); uint8_t g = ((x)>>(8*1)&0xFF); uint8_t b = ((x)>>(8*0)&0xFF); uint8_t a = ((x)>>(8*3)&0xFF)
 #define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
-#define RGB_hexRGB(r, g, b) (int)(0x010000*(r) + 0x000100*(g) + 0x000001*(b))
+#define RGB_hexRGB(r, g, b) (int)(0x010000*(int)(r) + 0x000100*(int)(g) + 0x000001*(int)(b))
 
 #ifndef POINT
 #define POINT
@@ -56,6 +56,7 @@ typedef struct {
     float x;
     float y;
     float z;
+    float w;
 } Point ;
 #endif
 
@@ -160,7 +161,7 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
 
 void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, float z_near, float z_far);
 void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up);
-Point ae_project_point_view2screen(Mat2D proj_mat, Point src, float *w);
+Point ae_project_point_view2screen(Mat2D proj_mat, Point src);
 Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri);
 Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene);
 void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene);
@@ -168,6 +169,8 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
 void ae_swap_tri(Tri *v, int i, int j);
 bool ae_compare_tri(Tri t1, Tri t2);
 void ae_qsort_tri(Tri *v, int left, int right);
+double ae_liniar_map(double s, double min_in, double max_in, double min_out, double max_out);
+void ae_copy_z_buffer_to_screen(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer);
 
 #endif /* ALMOG_ENGINE_H_ */
 
@@ -990,12 +993,14 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
         ae_point_to_mat2D(inside_points[0], line_start);
         ae_point_to_mat2D(outside_points[0], line_end);
         (*tri_out1).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
+        (*tri_out1).points[1].w = t * (outside_points[0].w - inside_points[0].w) + inside_points[0].w;
         (*tri_out1).tex_points[1].x = t * (tex_outside_points[0].x - tex_inside_points[0].x) + tex_inside_points[0].x;
         (*tri_out1).tex_points[1].y = t * (tex_outside_points[0].y - tex_inside_points[0].y) + tex_inside_points[0].y;
 
         ae_point_to_mat2D(inside_points[0], line_start);
         ae_point_to_mat2D(outside_points[1], line_end);
         (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
+        (*tri_out1).points[2].w = t * (outside_points[1].w - inside_points[0].w) + inside_points[0].w;
         (*tri_out1).tex_points[2].x = t * (tex_outside_points[1].x - tex_inside_points[0].x) + tex_inside_points[0].x;
         (*tri_out1).tex_points[2].y = t * (tex_outside_points[1].y - tex_inside_points[0].y) + tex_inside_points[0].y;
 
@@ -1017,6 +1022,7 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
         ae_point_to_mat2D(inside_points[0], line_start);
         ae_point_to_mat2D(outside_points[0], line_end);
         (*tri_out1).points[2] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
+        (*tri_out1).points[2].w = t * (outside_points[0].w - inside_points[0].w) + inside_points[0].w;
         (*tri_out1).tex_points[2].x = t * (tex_outside_points[0].x - tex_inside_points[0].x) + tex_inside_points[0].x;
         (*tri_out1).tex_points[2].y = t * (tex_outside_points[0].y - tex_inside_points[0].y) + tex_inside_points[0].y;
 
@@ -1025,6 +1031,7 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
         ae_point_to_mat2D(inside_points[1], line_start);
         ae_point_to_mat2D(outside_points[0], line_end);
         (*tri_out2).points[1] = ae_line_itersect_plane(plane_p, plane_n, line_start, line_end, &t);
+        (*tri_out2).points[1].w = t * (outside_points[0].w - inside_points[1].w) + inside_points[1].w;
         (*tri_out2).tex_points[1].x = t * (tex_outside_points[0].x - tex_inside_points[1].x) + tex_inside_points[1].x;
         (*tri_out2).tex_points[1].y = t * (tex_outside_points[0].y - tex_inside_points[1].y) + tex_inside_points[1].y;
         (*tri_out2).points[2] = (*tri_out1).points[2];
@@ -1131,7 +1138,7 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
     mat2D_free(DCM_trans);
 }
 
-Point ae_project_point_view2screen(Mat2D proj_mat, Point src, float *w)
+Point ae_project_point_view2screen(Mat2D proj_mat, Point src)
 {
     Mat2D src_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
@@ -1148,12 +1155,12 @@ Point ae_project_point_view2screen(Mat2D proj_mat, Point src, float *w)
         des.x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
         des.y = MAT2D_AT(des_point_mat, 0, 1) / MAT2D_AT(des_point_mat, 0, 3);
         des.z = MAT2D_AT(des_point_mat, 0, 2) / MAT2D_AT(des_point_mat, 0, 3);
-        *w = MAT2D_AT(des_point_mat, 0, 3);
+        des.w = MAT2D_AT(des_point_mat, 0, 3);
     } else {
         des.x = MAT2D_AT(des_point_mat, 0, 0);
         des.y = MAT2D_AT(des_point_mat, 0, 1);
         des.z = MAT2D_AT(des_point_mat, 0, 2);
-        *w = 0;
+        des.w = 0;
     }
 
     mat2D_free(src_point_mat);
@@ -1261,13 +1268,13 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
     for (size_t temp_tri_index = 0; temp_tri_index < temp_tri_array.length; temp_tri_index++) {
         /* project tri to screen */
         for (int i = 0; i < 3; i++) {
-            float w = 0;
-            des_tri.points[i] = ae_project_point_view2screen(proj_mat, temp_tri_array.elements[temp_tri_index].points[i], &w);
+            des_tri.points[i] = ae_project_point_view2screen(proj_mat, temp_tri_array.elements[temp_tri_index].points[i]);
 
-            if (w) {
-                des_tri.tex_points[i].x /= w;
-                des_tri.tex_points[i].y /= w;
-                des_tri.tex_points[i].z /= w;
+            if (des_tri.points[i].w) {
+                des_tri.tex_points[i].x /= des_tri.points[i].w;
+                des_tri.tex_points[i].y /= des_tri.points[i].w;
+                des_tri.tex_points[i].z /= des_tri.points[i].w;
+                des_tri.tex_points[i].w  = des_tri.points[i].w;
             }
 
             /* scale into view */
@@ -1440,5 +1447,33 @@ void ae_qsort_tri(Tri *v, int left, int right)
     ae_qsort_tri(v, last + 1, right);
 }
 
+double ae_liniar_map(double s, double min_in, double max_in, double min_out, double max_out)
+{
+    return (min_out + ((s-min_in)*(max_out-min_out))/(max_in-min_in));
+}
 
+void ae_copy_z_buffer_to_screen(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer)
+{
+    double max_inv_z = 0;
+    double min_inv_z = DBL_MAX;
+    for (size_t i = 0; i < inv_z_buffer.rows; i++) {
+        for (size_t j = 0; j < inv_z_buffer.cols; j++) {
+            if (MAT2D_AT(inv_z_buffer, i, j) > max_inv_z) {
+                max_inv_z = MAT2D_AT(inv_z_buffer, i, j);
+            }
+            if (MAT2D_AT(inv_z_buffer, i, j) < min_inv_z && MAT2D_AT(inv_z_buffer, i, j) > 0) {
+                min_inv_z = MAT2D_AT(inv_z_buffer, i, j);
+            }
+        }
+    }
+    for (size_t i = 0; i < inv_z_buffer.rows; i++) {
+        for (size_t j = 0; j < inv_z_buffer.cols; j++) {
+            double z_fraq = MAT2D_AT(inv_z_buffer, i, j);
+            z_fraq = fmax(z_fraq, min_inv_z);
+            z_fraq = ae_liniar_map(z_fraq, min_inv_z, max_inv_z, 0, 1);
+            uint32_t color = RGB_hexRGB(0xFF*z_fraq, 0xFF*z_fraq, 0xFF*z_fraq); 
+            MAT2D_AT_UINT32(screen_mat, i, j) = color;
+        }
+    }
+}
 #endif /* ALMOG_ENGINE_IMPLEMENTATION */ //

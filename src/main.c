@@ -28,8 +28,8 @@ void ae_appand_copy_of_mesh(Mesh_array *mesh_array, Mesh mesh) {
 
 void setup(game_state_t *game_state)
 {
-    // game_state->to_limit_fps = 0;
-    game_state->const_fps = 30;
+    game_state->to_limit_fps = 0;
+    // game_state->const_fps = 5;
 
     ada_init_array(Mesh, game_state->scene.original_meshes);
     ada_init_array(Mesh, game_state->scene.in_world_meshes);
@@ -51,7 +51,8 @@ void setup(game_state_t *game_state)
     // strncpy(file_path, "./stl_files/Voronoi_Stanford_Bunny.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Lucy_120mm_simplified.STL", MAX_LEN_LINE);
 
-    strncpy(file_path, "./stl_files/teapot.stl", MAX_LEN_LINE);
+    // strncpy(file_path, "./stl_files/teapot.stl", MAX_LEN_LINE);
+    strncpy(file_path, "./obj_files/f16/f16.obj", MAX_LEN_LINE);
     ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
 
     // ada_appand(Mesh, game_state->scene.original_meshes, ae_create_cube(1, 0xFFFFFFFF));
@@ -86,6 +87,7 @@ void update(game_state_t *game_state)
     ae_set_view_mat(game_state->scene.view_mat, game_state->scene.camera, game_state->scene.up_direction);
 
     float theta = 10 * game_state->delta_time;
+    // float theta = 0;
 
     ae_rotate_mesh_Euler_xyz(game_state->scene.in_world_meshes.elements[0], theta, 0, theta/2);
 
@@ -106,5 +108,6 @@ void render(game_state_t *game_state)
     for (size_t i = 0; i < game_state->scene.in_world_meshes.length; i++) {
         game_state->scene.projected_meshes.elements[i].length = 0;
     }
-}
 
+    // ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
+}

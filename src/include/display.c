@@ -297,6 +297,8 @@ void update_window(game_state_t *game_state)
         SDL_SetWindowTitle(game_state->window, fps_count);
     }
 
+    check_window_mat_size(game_state);
+
     /*----------------------------------------------------------------------------*/
 
     update(game_state);
@@ -383,8 +385,6 @@ void check_window_mat_size(game_state_t *game_state)
 
 void copy_mat_to_surface_RGB(game_state_t *game_state)
 {
-    check_window_mat_size(game_state);
-
     SDL_LockSurface(game_state->window_surface);
 
     memcpy(game_state->window_surface->pixels, game_state->window_pixels_mat.elements, sizeof(uint32_t) * game_state->window_pixels_mat.rows * game_state->window_pixels_mat.cols);

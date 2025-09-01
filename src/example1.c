@@ -98,7 +98,7 @@ void update(game_state_t *game_state)
 void render(game_state_t *game_state)
 {
     for (size_t i = 0; i < game_state->scene.projected_meshes.length; i++) {
-        ars2D_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
+        ars2D_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->inv_z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
     }
 
     for (size_t i = 0; i < game_state->scene.in_world_meshes.length; i++) {
