@@ -58,13 +58,6 @@ void setup(game_state_t *game_state)
     // ada_appand(Mesh, game_state->scene.original_meshes, ae_create_cube(1, 0xFFFFFFFF));
 
 
-    strncpy(file_path, "./stl_files/Stanford dragon lowres.STL", MAX_LEN_LINE);
-    ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
-    
-    strncpy(file_path, "./obj_files/f16/f16.obj", MAX_LEN_LINE);
-    ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
-
-
     printf("[INFO] number of meshes: %zu\n", game_state->scene.original_meshes.length);
     size_t sum = 0;
     for (size_t i = 0; i < game_state->scene.original_meshes.length; i++) {
@@ -116,5 +109,5 @@ void render(game_state_t *game_state)
         game_state->scene.projected_meshes.elements[i].length = 0;
     }
 
-    // ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
+    ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
 }
