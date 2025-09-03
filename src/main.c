@@ -102,7 +102,7 @@ void render(game_state_t *game_state)
     for (size_t i = 0; i < game_state->scene.projected_meshes.length; i++) {
         ars2D_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->inv_z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
         // ars2D_fill_mesh_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
-        // ars2D_draw_mesh(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i], 0x00000000);
+        // ars2D_draw_mesh(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i], 0xFF0000);
     }
 
     for (size_t i = 0; i < game_state->scene.in_world_meshes.length; i++) {

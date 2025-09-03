@@ -50,6 +50,16 @@
 #define ARGB_hexARGB(a, r, g, b) 0x01000000*(a) + 0x00010000*(r) + 0x00000100*(g) + 0x00000001*(b)
 #define RGB_hexRGB(r, g, b) (int)(0x010000*(int)(r) + 0x000100*(int)(g) + 0x000001*(int)(b))
 
+#define AE_MAX_POINT_VAL 1e5
+#define ae_assert_point_is_valid(p) AE_ASSERT(isfinite(p.x) && isfinite(p.y) && isfinite(p.z) && isfinite(p.w));    \
+        AE_ASSERT(p.x > -AE_MAX_POINT_VAL && p.x < AE_MAX_POINT_VAL);                                                                  \
+        AE_ASSERT(p.y > -AE_MAX_POINT_VAL && p.y < AE_MAX_POINT_VAL);                                                                  \
+        AE_ASSERT(p.z > -AE_MAX_POINT_VAL && p.z < AE_MAX_POINT_VAL);                                                                  \
+        AE_ASSERT(p.w > -AE_MAX_POINT_VAL && p.w < AE_MAX_POINT_VAL);
+#define ae_assert_tri_is_valid(tri) ae_assert_point_is_valid((tri).points[0]);  \
+        ae_assert_point_is_valid((tri).points[1]);                              \
+        ae_assert_point_is_valid((tri).points[2])
+
 #ifndef POINT
 #define POINT
 typedef struct {
@@ -169,7 +179,7 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
 void ae_swap_tri(Tri *v, int i, int j);
 bool ae_compare_tri(Tri t1, Tri t2);
 void ae_qsort_tri(Tri *v, int left, int right);
-double ae_liniar_map(double s, double min_in, double max_in, double min_out, double max_out);
+double ae_linear_map(double s, double min_in, double max_in, double min_out, double max_out);
 void ae_copy_z_buffer_to_screen(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer);
 
 #endif /* ALMOG_ENGINE_H_ */
@@ -737,7 +747,8 @@ void ae_print_mesh_static(Mesh_static mesh, char *name, size_t padding)
 
 void ae_calc_normal_to_tri(Mat2D normal, Tri tri)
 {
-    MATRIX2D_ASSERT(3 == normal.rows && 1 == normal.cols);
+    AE_ASSERT(3 == normal.rows && 1 == normal.cols);
+    ae_assert_tri_is_valid(tri);
 
     Mat2D a = mat2D_alloc(3, 1);
     Mat2D b = mat2D_alloc(3, 1);
@@ -850,6 +861,7 @@ void ae_set_mesh_bounding_box(Mesh mesh, float *x_min, float *x_max, float *y_mi
 
 void ae_set_tri_center_zmin_zmax(Tri *tri)
 {
+    ae_assert_tri_is_valid(*tri);
     tri->center.x = (tri->points[0].x + tri->points[1].x + tri->points[2].x) / 3;
     tri->center.y = (tri->points[0].y + tri->points[1].y + tri->points[2].y) / 3;
     tri->center.z = (tri->points[0].z + tri->points[1].z + tri->points[2].z) / 3;
@@ -882,7 +894,7 @@ void ae_normalize_mesh(Mesh mesh)
             y = (((y - ymin) / (ydiff)) * 2 - 1) * yfactor;
             z = (((z - zmin) / (zdiff)) * 2 - 1) * zfactor;
 
-            ae_set_tri_center_zmin_zmax(&(mesh.elements[t]));
+            // ae_set_tri_center_zmin_zmax(&(mesh.elements[t]));
 
             mesh.elements[t].points[p].x = x;
             mesh.elements[t].points[p].y = y;
@@ -918,6 +930,8 @@ Point ae_line_itersect_plane(Mat2D plane_p, Mat2D plane_n, Mat2D line_start, Mat
 /* signed distance from point to plane */
 float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n)
 {
+    ae_assert_point_is_valid(p);
+
     // mat2D_normalize(plane_n);
     // Mat2D p_mat2D = mat2D_alloc(3, 1);
     // ae_point_to_mat2D(p, p_mat2D);
@@ -935,6 +949,8 @@ float signed_dist_point_and_plane(Point p, Mat2D plane_p, Mat2D plane_n)
 return -1 on error */
 int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_out1, Tri *tri_out2)
 {
+    ae_assert_tri_is_valid(tri_in);
+
     mat2D_normalize(plane_n);
 
     /* if the signed distance is positive, the point lies on the "inside" of the plane */
@@ -953,21 +969,23 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
     float d2 = signed_dist_point_and_plane(tri_in.points[2], plane_p, plane_n);
     float t;
 
-    if (d0 >= 0) {
+    // float epsilon = 1e-3;
+    float epsilon = 0;
+    if (d0 >= epsilon) {
         inside_points[inside_points_count++] = tri_in.points[0];
         tex_inside_points[tex_inside_points_count++] = tri_in.tex_points[0];
     } else {
         outside_points[outside_points_count++] = tri_in.points[0];
         tex_outside_points[tex_outside_points_count++] = tri_in.tex_points[0];
     }
-    if (d1 >= 0) {
+    if (d1 >= epsilon) {
         inside_points[inside_points_count++] = tri_in.points[1];
         tex_inside_points[tex_inside_points_count++] = tri_in.tex_points[1];
     } else {
         outside_points[outside_points_count++] = tri_in.points[1];
         tex_outside_points[tex_outside_points_count++] = tri_in.tex_points[1];
     }
-    if (d2 >= 0) {
+    if (d2 >= epsilon) {
         inside_points[inside_points_count++] = tri_in.points[2];
         tex_inside_points[tex_inside_points_count++] = tri_in.tex_points[2];
     } else {
@@ -1007,6 +1025,8 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
         mat2D_free(line_start);
         mat2D_free(line_end);
 
+        ae_assert_tri_is_valid(*tri_out1);
+
         return 1;
     } else if (inside_points_count == 2 && outside_points_count == 1) {
         Mat2D line_start = mat2D_alloc(3, 1);
@@ -1040,6 +1060,9 @@ int ae_tri_clip_with_plane(Tri tri_in, Mat2D plane_p, Mat2D plane_n, Tri *tri_ou
         mat2D_free(line_start);
         mat2D_free(line_end);
 
+        ae_assert_tri_is_valid(*tri_out1);
+        ae_assert_tri_is_valid(*tri_out2);
+
         return 2;
     }
     return -1;
@@ -1049,6 +1072,7 @@ void ae_set_projection_mat(Mat2D proj_mat,float aspect_ratio, float FOV_deg, flo
 {
     AE_ASSERT(4 == proj_mat.cols); 
     AE_ASSERT(4 == proj_mat.rows); 
+    AE_ASSERT(FOV_deg && "FOV needs to bee bigger then zero");
 
     mat2D_fill(proj_mat, 0);
 
@@ -1140,6 +1164,8 @@ void ae_set_view_mat(Mat2D view_mat, Camera camera, Mat2D up)
 
 Point ae_project_point_view2screen(Mat2D proj_mat, Point src)
 {
+    ae_assert_point_is_valid(src);
+
     Mat2D src_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
     Point des;
@@ -1151,26 +1177,36 @@ Point ae_project_point_view2screen(Mat2D proj_mat, Point src)
 
     mat2D_dot(des_point_mat, src_point_mat, proj_mat);
 
-    if (MAT2D_AT(des_point_mat, 0, 3)) {
-        des.x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
-        des.y = MAT2D_AT(des_point_mat, 0, 1) / MAT2D_AT(des_point_mat, 0, 3);
-        des.z = MAT2D_AT(des_point_mat, 0, 2) / MAT2D_AT(des_point_mat, 0, 3);
-        des.w = MAT2D_AT(des_point_mat, 0, 3);
+    double w = MAT2D_AT(des_point_mat, 0, 3);
+    if (fabs(w) > 1e-3) {
+        des.x = MAT2D_AT(des_point_mat, 0, 0) / w;
+        des.y = MAT2D_AT(des_point_mat, 0, 1) / w;
+        des.z = MAT2D_AT(des_point_mat, 0, 2) / w;
+        des.w = w;
     } else {
-        des.x = MAT2D_AT(des_point_mat, 0, 0);
-        des.y = MAT2D_AT(des_point_mat, 0, 1);
-        des.z = MAT2D_AT(des_point_mat, 0, 2);
-        des.w = 0;
+        // des.x = MAT2D_AT(des_point_mat, 0, 0);
+        // des.y = MAT2D_AT(des_point_mat, 0, 1);
+        // des.z = MAT2D_AT(des_point_mat, 0, 2);
+        // des.w = 1;
+
+        des.x = 0;
+        des.y = 0;
+        des.z = 0;
+        des.w = 1;
     }
 
     mat2D_free(src_point_mat);
     mat2D_free(des_point_mat);
+
+    ae_assert_point_is_valid(des);
 
     return des;
 }
 
 Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri)
 {
+    ae_assert_tri_is_valid(tri);
+
     Mat2D src_point_mat = mat2D_alloc(1,4);
     Mat2D des_point_mat = mat2D_alloc(1,4);
 
@@ -1184,25 +1220,26 @@ Tri ae_transform_tri_to_view(Mat2D view_mat, Tri tri)
 
         mat2D_dot(des_point_mat, src_point_mat, view_mat);
 
-        if (MAT2D_AT(des_point_mat, 0, 3)) {
-            des_tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0) / MAT2D_AT(des_point_mat, 0, 3);
-            des_tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1) / MAT2D_AT(des_point_mat, 0, 3);
-            des_tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2) / MAT2D_AT(des_point_mat, 0, 3);
-        } else {
-            des_tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0);
-            des_tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1);
-            des_tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2);
-        }
+        double w = MAT2D_AT(des_point_mat, 0, 3);
+        AE_ASSERT(w == 1);
+        des_tri.points[i].x = MAT2D_AT(des_point_mat, 0, 0) / w;
+        des_tri.points[i].y = MAT2D_AT(des_point_mat, 0, 1) / w;
+        des_tri.points[i].z = MAT2D_AT(des_point_mat, 0, 2) / w;
+        des_tri.points[i].w = w;
     }
 
     mat2D_free(src_point_mat);
     mat2D_free(des_point_mat);
+
+    ae_assert_tri_is_valid(des_tri);
 
     return des_tri;
 }
 
 Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
+    ae_assert_tri_is_valid(tri);
+
     Mat2D tri_normal = mat2D_alloc(3, 1);
     Mat2D temp_camera2tri = mat2D_alloc(3, 1);
     Mat2D camera2tri = mat2D_alloc(1, 3);
@@ -1257,8 +1294,11 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
     } else if (num_clipped_tri == 0) {
         ;
     } else if (num_clipped_tri == 1) {
+        ae_assert_tri_is_valid(clipped_tri1);
         ada_appand(Tri, temp_tri_array, clipped_tri1);
     } else if (num_clipped_tri == 2) {
+        ae_assert_tri_is_valid(clipped_tri1);
+        ae_assert_tri_is_valid(clipped_tri2);
         ada_appand(Tri, temp_tri_array, clipped_tri1);
         ada_appand(Tri, temp_tri_array, clipped_tri2);
     }
@@ -1285,6 +1325,7 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
             des_tri.points[i].y *= 0.5f * window_h;
 
         }
+        ae_assert_tri_is_valid(des_tri);
         ae_set_tri_center_zmin_zmax(&des_tri);
         temp_tri_array.elements[temp_tri_index] = des_tri;
     }
@@ -1302,6 +1343,7 @@ Mesh ae_project_tri_world2screen(Mat2D proj_mat, Mat2D view_mat, Tri tri, int wi
 void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mesh src, int window_w, int window_h, Mat2D light_direction, Scene *scene)
 {
     Mesh temp_des = *des;
+
     size_t i;
     for (i = 0; i < src.length; i++) {
         Mesh temp_tri_array = ae_project_tri_world2screen(proj_mat, view_mat, src.elements[i], window_w, window_h, light_direction, scene);
@@ -1344,14 +1386,17 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
     MAT2D_AT(right_p, 0, 0) = window_w - offset;
     MAT2D_AT(right_n, 0, 0) = -1;
 
-    for (int tri_index = 0; tri_index < (int)temp_des.length; tri_index++) {
-        if (temp_des.length == 0) {
-            break;
-        }
-        if (temp_des.elements[tri_index].to_draw == false) {
-            continue;
-        }
-        for (int plane_number = 0; plane_number < 4; plane_number++) {
+    for (int plane_number = 0; plane_number < 4; plane_number++) {
+        for (int tri_index = 0; tri_index < (int)(temp_des.length); tri_index++) {
+            if (temp_des.length == 0) {
+                break;
+            }
+            if (temp_des.elements[tri_index].to_draw == false) {
+                ada_remove_unordered(Tri, temp_des, tri_index);
+                tri_index--;
+                tri_index = (int)fmaxf((float)tri_index, 0.0f);
+                continue;
+            }
             Tri clipped_tri1 = {0};
             Tri clipped_tri2 = {0};
             int num_clipped_tri;
@@ -1375,12 +1420,15 @@ void ae_project_mesh_world2screen(Mat2D proj_mat, Mat2D view_mat, Mesh *des, Mes
             } else if (num_clipped_tri == 0) {
                 ada_remove_unordered(Tri, temp_des, tri_index);
                 tri_index--;
-                tri_index = (int)fmaxf(tri_index, 0);
+                tri_index = (int)fmaxf((float)tri_index, 0.0f);
             } else if (num_clipped_tri == 1) {
+                ae_assert_tri_is_valid(clipped_tri1);
                 temp_des.elements[tri_index] = clipped_tri1;
             } else if (num_clipped_tri == 2) {
+                ae_assert_tri_is_valid(clipped_tri1);
+                ae_assert_tri_is_valid(clipped_tri2);
                 temp_des.elements[tri_index] = clipped_tri1;
-                ada_insert_unordered(Tri, temp_des, clipped_tri2, (tri_index+1));
+                ada_insert_unordered(Tri, temp_des, clipped_tri2, tri_index+1);
             }
         }
     }
@@ -1447,7 +1495,7 @@ void ae_qsort_tri(Tri *v, int left, int right)
     ae_qsort_tri(v, last + 1, right);
 }
 
-double ae_liniar_map(double s, double min_in, double max_in, double min_out, double max_out)
+double ae_linear_map(double s, double min_in, double max_in, double min_out, double max_out)
 {
     return (min_out + ((s-min_in)*(max_out-min_out))/(max_in-min_in));
 }
@@ -1470,10 +1518,13 @@ void ae_copy_z_buffer_to_screen(Mat2D_uint32 screen_mat, Mat2D inv_z_buffer)
         for (size_t j = 0; j < inv_z_buffer.cols; j++) {
             double z_fraq = MAT2D_AT(inv_z_buffer, i, j);
             z_fraq = fmax(z_fraq, min_inv_z);
-            z_fraq = ae_liniar_map(z_fraq, min_inv_z, max_inv_z, 0, 1);
+            z_fraq = ae_linear_map(z_fraq, min_inv_z, max_inv_z, 0.1, 1);
             uint32_t color = RGB_hexRGB(0xFF*z_fraq, 0xFF*z_fraq, 0xFF*z_fraq); 
             MAT2D_AT_UINT32(screen_mat, i, j) = color;
         }
     }
 }
+
+
+
 #endif /* ALMOG_ENGINE_IMPLEMENTATION */ //

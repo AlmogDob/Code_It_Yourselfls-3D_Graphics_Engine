@@ -109,5 +109,5 @@ void render(game_state_t *game_state)
         game_state->scene.projected_meshes.elements[i].length = 0;
     }
 
-    ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
+    // ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
 }

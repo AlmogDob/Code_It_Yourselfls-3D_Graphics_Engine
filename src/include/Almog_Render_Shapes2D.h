@@ -8,9 +8,9 @@
 #include "Matrix2D.h"
 #include "Almog_Engine.h"
 
-#ifndef ars2D_ASSERT
+#ifndef ARS2D_ASSERT
 #include <assert.h>
-#define ars2D_ASSERT assert
+#define ARS2D_ASSERT assert
 #endif
 
 #ifndef POINT
@@ -42,6 +42,12 @@ typedef struct {
 #define is_top_edge(x, y) (y == 0 && x > 0)
 #define is_left_edge(x, y) (y < 0)
 #define is_top_left(ps, pe) (is_top_edge(pe.x-ps.x, pe.y-ps.y) || is_left_edge(pe.x-ps.x, pe.y-ps.y))
+
+#define ARS2D_MAX_POINT_VAL 1e4
+#define ars2D_assert_point_is_valid(p) AE_ASSERT(isfinite(p.x) && isfinite(p.y) && isfinite(p.z) && isfinite(p.w))
+#define ars2D_assert_tri_is_valid(tri) ars2D_assert_point_is_valid(tri.points[0]); \
+        ars2D_assert_point_is_valid(tri.points[1]);                                \
+        ars2D_assert_point_is_valid(tri.points[2])
 
 void ars2D_draw_point(Mat2D_uint32 screen_mat, int x, int y, uint32_t color);
 void ars2D_draw_line(Mat2D_uint32 screen_mat, int x1, int y1, int x2, int y2, uint32_t color);
@@ -80,13 +86,18 @@ void ars2D_draw_line(Mat2D_uint32 screen_mat, int x1, int y1, int x2, int y2, ui
     int y = y1;
     int dx, dy;
 
+    ARS2D_ASSERT(x1 > -ARS2D_MAX_POINT_VAL && x1 < ARS2D_MAX_POINT_VAL);
+    ARS2D_ASSERT(x2 > -ARS2D_MAX_POINT_VAL && x2 < ARS2D_MAX_POINT_VAL);
+    ARS2D_ASSERT(y1 > -ARS2D_MAX_POINT_VAL && y1 < ARS2D_MAX_POINT_VAL);
+    ARS2D_ASSERT(y2 > -ARS2D_MAX_POINT_VAL && y2 < ARS2D_MAX_POINT_VAL);
+
     ars2D_draw_point(screen_mat, x, y, color);
 
     dx = x2 - x1;
     dy = y2 - y1;
 
-    ars2D_ASSERT(dy > INT_MIN && dy < INT_MAX);
-    ars2D_ASSERT(dx > INT_MIN && dx < INT_MAX);
+    ARS2D_ASSERT(dy > INT_MIN && dy < INT_MAX);
+    ARS2D_ASSERT(dx > INT_MIN && dx < INT_MAX);
 
     if (0 == dx && 0 == dy) return;
     if (0 == dx) {
@@ -308,25 +319,30 @@ void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buff
     p1 = tri.points[1];
     p2 = tri.points[2];
 
-    /* draw only outline of the tri if there is no area */
-    float w = edge_cross_point(p0, p1, p1, p2);
-    if (!w) {
-        ars2D_draw_tri(screen_mat, tri, tri.color);
-        return;
-    }
-    MATRIX2D_ASSERT(w != 0 && "triangle has area");
-
-    /* fill conventions */
-    int bias0 = is_top_left(p0, p1) ? 0 : -1;
-    int bias1 = is_top_left(p1, p2) ? 0 : -1;
-    int bias2 = is_top_left(p2, p0) ? 0 : -1;
-
     /* finding bounding box */
     int x_min = fmin(p0.x, fmin(p1.x, p2.x));
     int x_max = fmax(p0.x, fmax(p1.x, p2.x));
     int y_min = fmin(p0.y, fmin(p1.y, p2.y));
     int y_max = fmax(p0.y, fmax(p1.y, p2.y));
-    // printf("xmin: %d, xmax: %d || ymin: %d, ymax: %d\n", x_min, x_max, y_min, y_max);
+
+    /* Clamp to screen bounds */
+    if (x_min < 0) x_min = 0;
+    if (y_min < 0) y_min = 0;
+    if (x_max >= (int)screen_mat.cols) x_max = screen_mat.cols - 1;
+    if (y_max >= (int)screen_mat.rows) y_max = screen_mat.rows - 1;
+
+    /* draw only outline of the tri if there is no area */
+    float w = edge_cross_point(p0, p1, p1, p2);
+    if (fabsf(w) < 1e-6) {
+        ars2D_draw_tri(screen_mat, tri, tri.color);
+        return;
+    }
+    MATRIX2D_ASSERT(fabsf(w) > 1e-6 && "triangle has area");
+
+    /* fill conventions */
+    int bias0 = is_top_left(p0, p1) ? 0 : -1;
+    int bias1 = is_top_left(p1, p2) ? 0 : -1;
+    int bias2 = is_top_left(p2, p0) ? 0 : -1;
 
     for (int y = y_min; y <= y_max; y++) {
         for (int x = x_min; x <= x_max; x++) {
@@ -354,7 +370,7 @@ void ars2D_fill_tri_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buff
                 double z_over_w = beta * (p0.z / p0.w) + gamma  * (p1.z / p1.w) + alpha * (p2.z / p2.w);
                 double inv_z = inv_w / z_over_w;
 
-                if (inv_z > MAT2D_AT(inv_z_buffer, y, x)) {
+                if (inv_z >= MAT2D_AT(inv_z_buffer, y, x)) {
                     ars2D_draw_point(screen_mat, x, y, RGB_hexRGB(r8, g8, b8));
                     MAT2D_AT(inv_z_buffer, y, x) = inv_z;
                 }
@@ -386,6 +402,12 @@ void ars2D_fill_tri_Pinedas_rasterizer_interpolate_color(Mat2D_uint32 screen_mat
     int y_min = fmin(p0.y, fmin(p1.y, p2.y));
     int y_max = fmax(p0.y, fmax(p1.y, p2.y));
     // printf("xmin: %d, xmax: %d || ymin: %d, ymax: %d\n", x_min, x_max, y_min, y_max);
+
+    /* Clamp to screen bounds */
+    if (x_min < 0) x_min = 0;
+    if (y_min < 0) y_min = 0;
+    if (x_max >= (int)screen_mat.cols) x_max = screen_mat.cols - 1;
+    if (y_max >= (int)screen_mat.rows) y_max = screen_mat.rows - 1;
 
     for (int y = y_min; y <= y_max; y++) {
         for (int x = x_min; x <= x_max; x++) {
@@ -463,6 +485,12 @@ void ars2D_fill_tri_Pinedas_rasterizer_with_mat2D(Mat2D_uint32 screen_mat, Tri t
     int y_max = fmax(MAT2D_AT(p0, 1, 0), fmax(MAT2D_AT(p1, 1, 0), MAT2D_AT(p2, 1, 0)));
     // printf("xmin: %d, xmax: %d || ymin: %d, ymax: %d\n", x_min, x_max, y_min, y_max);
 
+    /* Clamp to screen bounds */
+    if (x_min < 0) x_min = 0;
+    if (y_min < 0) y_min = 0;
+    if (x_max >= (int)screen_mat.cols) x_max = screen_mat.cols - 1;
+    if (y_max >= (int)screen_mat.rows) y_max = screen_mat.rows - 1;
+
     for (int y = y_min; y <= y_max; y++) {
         for (int x = x_min; x <= x_max; x++) {
             // ars2D_draw_point(screen_mat, x, y, color);
@@ -539,9 +567,12 @@ void ars2D_fill_mesh_Pinedas_rasterizer(Mat2D_uint32 screen_mat, Mat2D inv_z_buf
 {
     for (size_t i = 0; i < mesh.length; i++) {
         Tri tri = mesh.elements[i];
-        if (tri.to_draw) {
-            ars2D_fill_tri_Pinedas_rasterizer(screen_mat, inv_z_buffer_mat, tri, tri.light_intensity);
-        }
+        /* Reject invalid triangles */
+        ars2D_assert_tri_is_valid(tri);
+
+        if (!tri.to_draw) continue;
+
+        ars2D_fill_tri_Pinedas_rasterizer(screen_mat, inv_z_buffer_mat, tri, tri.light_intensity);
     }
 }
 
