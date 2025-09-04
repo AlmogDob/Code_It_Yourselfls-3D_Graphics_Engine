@@ -9,8 +9,8 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 #define RENDER
 #include "./include/display.c"
 #include "./include/Matrix2D.h"
-#define ALMOG_RENDER_SHAPES_IMPLEMENTATION
-#include "./include/Almog_Render_Shapes2D.h"
+#define ALMOG_DRAW_LIBRARY_IMPLEMENTATION
+#include "./include/Almog_Draw_Library.h"
 #define ALMOG_ENGINE_IMPLEMENTATION
 #include "./include/Almog_Engine.h"
 
@@ -100,9 +100,9 @@ void update(game_state_t *game_state)
 void render(game_state_t *game_state)
 {
     for (size_t i = 0; i < game_state->scene.projected_meshes.length; i++) {
-        ars2D_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->inv_z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
-        // ars2D_fill_mesh_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
-        // ars2D_draw_mesh(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i], 0x00000000);
+        adl_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->inv_z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
+        // adl_fill_mesh_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
+        // adl_draw_mesh(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i], 0x00000000);
     }
 
     for (size_t i = 0; i < game_state->scene.in_world_meshes.length; i++) {

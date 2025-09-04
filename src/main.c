@@ -9,8 +9,8 @@ https://youtu.be/ih20l3pJoeU?si=CzQ8rjk5ZEOlqEHN. */
 #define RENDER
 #include "./include/display.c"
 #include "./include/Matrix2D.h"
-#define ALMOG_RENDER_SHAPES_IMPLEMENTATION
-#include "./include/Almog_Render_Shapes2D.h"
+#define ALMOG_DRAW_LIBRARY_IMPLEMENTATION
+#include "./include/Almog_Draw_Library.h"
 #define ALMOG_ENGINE_IMPLEMENTATION
 #include "./include/Almog_Engine.h"
 
@@ -45,14 +45,12 @@ void setup(game_state_t *game_state)
 
     // strncpy(file_path, "./stl_files/plug.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/pin.STL", MAX_LEN_LINE);
-    // strncpy(file_path, "./stl_files/teapot.stl", MAX_LEN_LINE);
+    strncpy(file_path, "./stl_files/teapot.stl", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Stanford dragon highres.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Stanford dragon lowres.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Voronoi_Stanford_Bunny.STL", MAX_LEN_LINE);
     // strncpy(file_path, "./stl_files/Lucy_120mm_simplified.STL", MAX_LEN_LINE);
 
-    // strncpy(file_path, "./stl_files/teapot.stl", MAX_LEN_LINE);
-    strncpy(file_path, "./obj_files/f16/f16.obj", MAX_LEN_LINE);
     ada_appand(Mesh, game_state->scene.original_meshes, ae_get_mesh_from_file(file_path));
 
     // ada_appand(Mesh, game_state->scene.original_meshes, ae_create_cube(1, 0xFFFFFFFF));
@@ -76,7 +74,7 @@ void setup(game_state_t *game_state)
         game_state->scene.projected_meshes.elements[i].length = 0;
     }
 
-    // ae_rotate_mesh_Euler_xyz(game_state->scene.in_world_meshes.elements[0], -90, 0, 180);
+    ae_rotate_mesh_Euler_xyz(game_state->scene.in_world_meshes.elements[0], -90, 0, 180);
 
     // ae_translate_mesh(game_state->scene.in_world_meshes.elements[0], 0, 0, 2);
 }
@@ -100,14 +98,14 @@ void update(game_state_t *game_state)
 void render(game_state_t *game_state)
 {
     for (size_t i = 0; i < game_state->scene.projected_meshes.length; i++) {
-        ars2D_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->inv_z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
-        // ars2D_fill_mesh_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
-        // ars2D_draw_mesh(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i], 0xFF0000);
+        adl_fill_mesh_Pinedas_rasterizer(game_state->window_pixels_mat, game_state->inv_z_buffer_mat, game_state->scene.projected_meshes.elements[i]);
+        // adl_fill_mesh_scanline_rasterizer(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i]);
+        // adl_draw_mesh(game_state->window_pixels_mat, game_state->scene.projected_meshes.elements[i], 0xFF0000);
     }
 
     for (size_t i = 0; i < game_state->scene.in_world_meshes.length; i++) {
         game_state->scene.projected_meshes.elements[i].length = 0;
     }
 
-    ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
+    // ae_copy_z_buffer_to_screen(game_state->window_pixels_mat, game_state->inv_z_buffer_mat);
 }

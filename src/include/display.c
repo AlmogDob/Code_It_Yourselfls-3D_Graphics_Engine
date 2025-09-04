@@ -6,11 +6,11 @@
 #include "Almog_Engine.h"
 
 #ifndef WINDOW_WIDTH
-#define WINDOW_WIDTH (16 * 50)
+#define WINDOW_WIDTH (16 * 80)
 #endif
 
 #ifndef WINDOW_HEIGHT
-#define WINDOW_HEIGHT (9 * 50)
+#define WINDOW_HEIGHT (9 * 80)
 #endif
 
 #ifndef FPS
